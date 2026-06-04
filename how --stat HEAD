@@ -1,0 +1,22 @@
+[33mcommit 871144318e150e29e387dbdfa6d3faa2175a46ed[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m
+Author: Ben <Ben>
+Date:   Mon Jun 1 17:30:49 2026 +0200
+
+    first commit
+
+ app/globals.css                             |  25 [32m+[m[31m-[m
+ app/page.tsx                                | 122 [32m+++++[m[31m-----[m
+ components/auth/AuthForm.tsx                | 125 [32m++++++++++[m
+ components/dashboard/AddAssignment.tsx      |  82 [32m+++++++[m
+ components/dashboard/AddAssignmentModal.tsx | 105 [32m++++++++[m
+ components/dashboard/AddCourse.tsx          |  84 [32m+++++++[m
+ components/dashboard/AddCourseModal.tsx     | 105 [32m++++++++[m
+ components/dashboard/AssignmentCard.tsx     |  77 [32m++++++[m
+ components/dashboard/CourseCard.tsx         |  94 [32m++++++++[m
+ components/dashboard/Dashboard.tsx          | 356 [32m++++++++++++++++++++++++++++[m
+ components/dashboard/StatCard.tsx           |  25 [32m++[m
+ components/layout/Sidebar.tsx               |  59 [32m+++++[m
+ lib/supabase.ts                             |  12 [32m+[m
+ package-lock.json                           |  94 [32m++++++++[m
+ package.json                                |   1 [32m+[m
+ 15 files changed, 1282 insertions(+), 84 deletions(-)

@@ -1,73 +1,46 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { supabase } from "../lib/supabase"
+import AuthForm from "../components/auth/AuthForm"
+import Dashboard from "../components/dashboard/Dashboard"
 
-import Dashboard from "@/components/dashboard/Dashboard"
-import AuthForm from "@/components/auth/AuthForm"
-
-import { supabase } from "@/lib/supabase"
-
-export default function Home() {
-  const [loading, setLoading] =
-    useState(true)
-
-  const [userEmail, setUserEmail] =
-    useState("")
+export default function Page() {
+  const [email, setEmail] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    checkUser()
+    // Check if user is already logged in
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setEmail(session?.user?.email ?? null)
+      setLoading(false)
+    })
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(
+    // Listen for login/logout events
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
-        if (session?.user) {
-          setUserEmail(
-            session.user.email || ""
-          )
-        } else {
-          setUserEmail("")
-        }
+        setEmail(session?.user?.email ?? null)
       }
     )
 
-    return () => {
-      subscription.unsubscribe()
-    }
+    return () => subscription.unsubscribe()
   }, [])
 
-  async function checkUser() {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (user) {
-      setUserEmail(user.email || "")
-    }
-
-    setLoading(false)
-  }
-
-  async function logout() {
-    await supabase.auth.signOut()
+  function logout() {
+    supabase.auth.signOut()
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        Loading...
-      </div>
+      <main className="min-h-screen bg-[#020617] flex items-center justify-center">
+        <div className="w-10 h-10 rounded-full border-4 border-purple-500 border-t-transparent animate-spin" />
+      </main>
     )
   }
 
-  if (!userEmail) {
+  if (!email) {
     return <AuthForm />
   }
 
-  return (
-    <Dashboard
-      email={userEmail}
-      logout={logout}
-    />
-  )
+  return <Dashboard email={email} logout={logout} />
 }
