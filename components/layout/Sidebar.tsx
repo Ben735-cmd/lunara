@@ -22,6 +22,7 @@ const navIcons: Record<string, string> = {
   Assignments: "✓",
   Notes: "📝",
   Calendar: "📅",
+  Solver: "🧮",
 }
 
 export default function Sidebar({ logout, onSelectCourse, selectedCourseId, activeNav, setActiveNav }: SidebarProps) {
@@ -49,7 +50,7 @@ export default function Sidebar({ logout, onSelectCourse, selectedCourseId, acti
     return () => { supabase.removeChannel(channel) }
   }, [])
 
-  const navItems = ["Assignments", "Notes", "Calendar"]
+  const navItems = ["Assignments", "Notes", "Calendar", "Solver"]
 
   return (
     <aside style={{
