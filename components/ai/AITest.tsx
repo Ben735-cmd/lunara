@@ -10,7 +10,7 @@ export default function AITest() {
       </h2>
 
       <p className="text-[#64748B] mt-2">
-        Powered by Gemini
+        Powered by Llama 3.3
       </p>
 
       <div className="mt-6">
