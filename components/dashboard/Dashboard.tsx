@@ -40,44 +40,90 @@ export default function Dashboard({ email, logout }: Props) {
   const [activeNav, setActiveNav] = useState("Dashboard")
   const [isDark, setIsDark] = useState(false)
   const [studyStreak, setStudyStreak] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const [toast, setToast] = useState<{ message: string; type: "error" | "success" } | null>(null)
+
+  function showToast(message: string, type: "error" | "success" = "error") {
+    setToast({ message, type })
+  }
+
+  useEffect(() => {
+    if (!toast) return
+    const timer = setTimeout(() => setToast(null), 4000)
+    return () => clearTimeout(timer)
+  }, [toast])
 
   async function fetchCourses() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
     setUserId(user.id)
-    const { data } = await supabase.from("courses").select("*").eq("user_id", user.id)
+    const { data, error } = await supabase.from("courses").select("*").eq("user_id", user.id)
+    if (error) {
+      console.error(error)
+      showToast("Couldn't load your courses. Please try again.")
+      return
+    }
     setCourses(data || [])
   }
 
   async function fetchAssignments() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-    const { data } = await supabase.from("assignments").select("*").eq("user_id", user.id)
+    const { data, error } = await supabase.from("assignments").select("*").eq("user_id", user.id)
+    if (error) {
+      console.error(error)
+      showToast("Couldn't load your assignments. Please try again.")
+      return
+    }
     setAssignments(data || [])
   }
 
   useEffect(() => {
-    fetchCourses()
-    fetchAssignments()
+    async function loadInitialData() {
+      setLoading(true)
+      await Promise.all([fetchCourses(), fetchAssignments()])
+      setLoading(false)
+    }
+    loadInitialData()
   }, [])
 
   async function increaseProgress(id: string, progress: number) {
-    await supabase.from("courses").update({ progress: progress + 10 }).eq("id", id)
+    const { error } = await supabase.from("courses").update({ progress: progress + 10 }).eq("id", id)
+    if (error) {
+      console.error(error)
+      showToast("Couldn't update progress. Please try again.")
+      return
+    }
     fetchCourses()
   }
 
   async function deleteCourse(id: string) {
-    await supabase.from("courses").delete().eq("id", id)
+    const { error } = await supabase.from("courses").delete().eq("id", id)
+    if (error) {
+      console.error(error)
+      showToast("Couldn't delete the course. Please try again.")
+      return
+    }
     fetchCourses()
   }
 
   async function toggleAssignment(id: string, completed: boolean) {
-    await supabase.from("assignments").update({ completed: !completed }).eq("id", id)
+    const { error } = await supabase.from("assignments").update({ completed: !completed }).eq("id", id)
+    if (error) {
+      console.error(error)
+      showToast("Couldn't update the assignment. Please try again.")
+      return
+    }
     fetchAssignments()
   }
 
   async function deleteAssignment(id: string) {
-    await supabase.from("assignments").delete().eq("id", id)
+    const { error } = await supabase.from("assignments").delete().eq("id", id)
+    if (error) {
+      console.error(error)
+      showToast("Couldn't delete the assignment. Please try again.")
+      return
+    }
     fetchAssignments()
   }
 
@@ -106,11 +152,21 @@ export default function Dashboard({ email, logout }: Props) {
   const inputBg = isDark ? "#0D0D1A" : "#FFFFFF"
   const inputBorder = isDark ? "rgba(255,255,255,0.08)" : "#E2E8F0"
 
+  if (loading) {
+    return (
+      <main style={{ minHeight: "100vh", background: bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div className="w-10 h-10 rounded-full border-4 border-purple-500 border-t-transparent animate-spin" />
+      </main>
+    )
+  }
+
   return (
     <main style={{ minHeight: "100vh", background: bg, display: "flex" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;900&family=Space+Grotesk:wght@700;900&display=swap');
         @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes toastIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .toast { animation: toastIn 0.2s ease; }
         * { font-family: 'DM Sans', sans-serif; box-sizing: border-box; }
         .card-hover { transition: all 0.2s ease; }
         .card-hover:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(139,92,246,0.12) !important; border-color: rgba(139,92,246,0.2) !important; }
@@ -147,6 +203,23 @@ export default function Dashboard({ email, logout }: Props) {
           .stat-grid { grid-template-columns: 1fr; }
         }
       `}</style>
+
+      {toast && (
+        <div
+          className={`toast fixed bottom-6 right-6 z-[100] flex items-center gap-3 px-5 py-3 rounded-2xl shadow-lg text-sm font-medium text-white ${
+            toast.type === "error" ? "bg-red-500" : "bg-emerald-500"
+          }`}
+        >
+          <span>{toast.message}</span>
+          <button
+            onClick={() => setToast(null)}
+            className="text-white/80 hover:text-white text-base leading-none"
+            aria-label="Dismiss notification"
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       <Sidebar
         logout={logout}
