@@ -117,6 +117,35 @@ export default function Dashboard({ email, logout }: Props) {
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 99px; }
+
+        /* Responsive layout */
+        .dashboard-section { padding: 44px 48px; width: 100%; }
+        .dashboard-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+        .dashboard-title { font-size: 3.5rem; }
+        .header-actions { display: flex; align-items: center; gap: 12px; }
+        .search-wrap { position: relative; }
+        .search-input { width: 280px; }
+        .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-top: 40px; }
+        .main-grid { display: grid; grid-template-columns: 1fr 340px; gap: 24px; margin-top: 28px; }
+
+        @media (max-width: 1024px) {
+          .main-grid { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 768px) {
+          /* extra top padding clears the fixed mobile hamburger button from Sidebar */
+          .dashboard-section { padding: 88px 20px 32px; }
+          .dashboard-title { font-size: 2.1rem; }
+          .stat-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; margin-top: 24px; }
+          .main-grid { gap: 16px; margin-top: 20px; }
+          .header-actions { width: 100%; }
+          .search-wrap { flex: 1; }
+          .search-input { width: 100%; }
+        }
+
+        @media (max-width: 460px) {
+          .stat-grid { grid-template-columns: 1fr; }
+        }
       `}</style>
 
       <Sidebar
@@ -150,21 +179,21 @@ export default function Dashboard({ email, logout }: Props) {
       ) : activeNav === "Solver" ? (
         <QuestionSolver />
       ) : (
-        <section style={{ flex: 1, padding: "44px 48px", overflowY: "auto", background: bg }}>
+        <section className="dashboard-section" style={{ flex: 1, overflowY: "auto", background: bg }}>
 
           {/* Header */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div className="dashboard-header">
             <div>
               <p style={{ color: textSecondary, fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600 }}>Welcome back</p>
-              <h1 style={{
+              <h1 className="dashboard-title" style={{
                 fontFamily: "'Space Grotesk', sans-serif",
-                fontSize: "3.5rem", fontWeight: 900,
+                fontWeight: 900,
                 color: textPrimary, marginTop: "6px", lineHeight: 1.1,
               }}>Hey there 👋</h1>
             </div>
 
-            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <div style={{ position: "relative" }}>
+            <div className="header-actions">
+              <div className="search-wrap">
                 <svg style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)", color: "#94A3B8", width: 18, height: 18 }}
                   xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
@@ -174,6 +203,7 @@ export default function Dashboard({ email, logout }: Props) {
                   placeholder="Search courses & tasks..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  className="search-input"
                   style={{
                     background: inputBg,
                     border: `1.5px solid ${inputBorder}`,
@@ -182,7 +212,6 @@ export default function Dashboard({ email, logout }: Props) {
                     paddingRight: searchQuery ? "48px" : "20px",
                     paddingTop: "13px",
                     paddingBottom: "13px",
-                    width: "280px",
                     fontSize: "0.875rem",
                     color: textPrimary,
                     outline: "none",
@@ -207,7 +236,7 @@ export default function Dashboard({ email, logout }: Props) {
           </div>
 
           {/* Stat Cards */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "20px", marginTop: "40px" }}>
+          <div className="stat-grid">
             {[
               { label: "Courses", value: courses.length, icon: "📚", bg: "linear-gradient(135deg, #F97316, #EC4899)", shadow: "rgba(249,115,22,0.25)" },
               { label: "Assignments", value: assignments.length, icon: "📝", bg: "linear-gradient(135deg, #06B6D4, #3B82F6)", shadow: "rgba(6,182,212,0.25)" },
@@ -234,7 +263,7 @@ export default function Dashboard({ email, logout }: Props) {
           </div>
 
           {/* Main Grid */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: "24px", marginTop: "28px" }}>
+          <div className="main-grid">
 
             {/* Courses Panel */}
             <div style={{ background: cardBg, border: `1.5px solid ${cardBorder}`, borderRadius: "28px", padding: "32px", boxShadow: "0 4px 24px rgba(0,0,0,0.04)" }}>
