@@ -148,7 +148,7 @@ export default function CourseViewer({ courseId, onBack }: Props) {
     setSummaryError("")
     try {
       const result = await callAI(
-        `Summarize the following course content in a clear, structured way with key points and main takeaways. Use bullet points where appropriate.\n\nCourse: ${course.title}\n\nContent:\n${course.content.slice(0, 4000)}`
+        `Summarize the following course content in a clear, structured way with key points and main takeaways. Use bullet points where appropriate.\n\nCourse: ${course.title}\n\nContent:\n${course.content.slice(0, 1500)}`
       )
       setSummary(result)
     } catch (err: unknown) {
@@ -172,7 +172,7 @@ export default function CourseViewer({ courseId, onBack }: Props) {
       [{"question":"...","options":["A) ...","B) ...","C) ...","D) ..."],"answer":"A) ..."}]
       
       Course: ${course.title}
-      Content: ${course.content.slice(0, 4000)}`
+      Content: ${course.content.slice(0, 1500)}`
       )
       try {
         const cleaned = result.replace(/```json|```/g, "").trim()
@@ -205,7 +205,7 @@ export default function CourseViewer({ courseId, onBack }: Props) {
       [{"front":"term or question","back":"definition or answer"}]
       
       Course: ${course.title}
-      Content: ${course.content.slice(0, 4000)}`
+      Content: ${course.content.slice(0, 1500)}`
       )
       try {
         const cleaned = result.replace(/```json|```/g, "").trim()
