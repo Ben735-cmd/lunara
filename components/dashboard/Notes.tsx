@@ -52,7 +52,11 @@ export default function Notes() {
 
   return (
     <main style={{ flex: 1, background: "#F0F2FF", padding: "44px 48px", overflowY: "auto" }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700;900&display=swap');`}</style>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700;900&display=swap');
+        .note-card { transition: all 0.2s ease; }
+        .note-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(139,92,246,0.1) !important; }
+      `}</style>
 
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px" }}>
@@ -80,6 +84,7 @@ export default function Notes() {
           boxShadow: "0 8px 32px rgba(139,92,246,0.1)",
           border: "1.5px solid rgba(139,92,246,0.2)",
         }}>
+          <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, color: "#0F172A", marginBottom: "16px", fontSize: "1.1rem" }}>New Note</h3>
           <input
             type="text"
             placeholder="Note title..."
@@ -88,21 +93,25 @@ export default function Notes() {
             style={{
               width: "100%", border: "1.5px solid #E2E8F0",
               borderRadius: "12px", padding: "12px 16px",
-              fontSize: "1rem", fontWeight: 600, color: "#0F172A",
+              fontSize: "1rem", fontWeight: 700, color: "#0F172A",
               outline: "none", marginBottom: "12px",
+              background: "#FAFBFF",
             }}
           />
+          {/* Divider between title and content */}
+          <div style={{ height: "1px", background: "#E2E8F0", marginBottom: "12px" }} />
           <textarea
             placeholder="Write your note here..."
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            rows={5}
+            rows={6}
             style={{
               width: "100%", border: "1.5px solid #E2E8F0",
               borderRadius: "12px", padding: "12px 16px",
               fontSize: "0.9rem", color: "#334155",
               outline: "none", resize: "vertical",
               fontFamily: "inherit", lineHeight: 1.7,
+              background: "#FAFBFF",
             }}
           />
           <div style={{ display: "flex", gap: "12px", marginTop: "16px" }}>
@@ -136,14 +145,15 @@ export default function Notes() {
           <p style={{ color: "#CBD5E1", fontSize: "0.85rem", marginTop: "8px" }}>Click "New Note" to get started</p>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "16px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "16px" }}>
           {notes.map((note) => (
             <div
               key={note.id}
+              className="note-card"
               onClick={() => setSelectedNote(selectedNote?.id === note.id ? null : note)}
               style={{
                 background: "white", borderRadius: "20px",
-                padding: "24px", cursor: "pointer",
+                overflow: "hidden", cursor: "pointer",
                 border: selectedNote?.id === note.id
                   ? "1.5px solid rgba(139,92,246,0.4)"
                   : "1.5px solid #F1F5F9",
@@ -153,11 +163,20 @@ export default function Notes() {
                 transition: "all 0.2s",
               }}
             >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+              {/* Title bar — clearly separated */}
+              <div style={{
+                padding: "18px 20px",
+                background: selectedNote?.id === note.id
+                  ? "linear-gradient(135deg, rgba(139,92,246,0.08), rgba(59,130,246,0.06))"
+                  : "#FAFBFF",
+                borderBottom: "1.5px solid #F1F5F9",
+                display: "flex", justifyContent: "space-between", alignItems: "center",
+              }}>
                 <h3 style={{
                   fontFamily: "'Space Grotesk', sans-serif",
-                  fontSize: "1rem", fontWeight: 700, color: "#0F172A",
+                  fontSize: "0.95rem", fontWeight: 700, color: "#0F172A",
                   flex: 1, marginRight: "12px",
+                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                 }}>{note.title}</h3>
                 <button
                   onClick={(e) => { e.stopPropagation(); deleteNote(note.id) }}
@@ -171,18 +190,26 @@ export default function Notes() {
                 >✕</button>
               </div>
 
-              <p style={{
-                color: "#64748B", fontSize: "0.85rem",
-                marginTop: "10px", lineHeight: 1.6,
-                display: "-webkit-box",
-                WebkitLineClamp: selectedNote?.id === note.id ? "unset" : 3,
-                WebkitBoxOrient: "vertical" as const,
-                overflow: selectedNote?.id === note.id ? "visible" : "hidden",
-              }}>{note.content}</p>
+              {/* Content area */}
+              <div style={{ padding: "16px 20px" }}>
+                <p style={{
+                  color: "#64748B", fontSize: "0.85rem",
+                  lineHeight: 1.7,
+                  display: "-webkit-box",
+                  WebkitLineClamp: selectedNote?.id === note.id ? "unset" : 4,
+                  WebkitBoxOrient: "vertical" as const,
+                  overflow: selectedNote?.id === note.id ? "visible" : "hidden",
+                  whiteSpace: "pre-wrap",
+                }}>{note.content}</p>
 
-              <p style={{ color: "#CBD5E1", fontSize: "0.72rem", marginTop: "14px" }}>
-                {new Date(note.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-              </p>
+                <p style={{
+                  color: "#CBD5E1", fontSize: "0.72rem",
+                  marginTop: "12px", paddingTop: "12px",
+                  borderTop: "1px solid #F1F5F9",
+                }}>
+                  {new Date(note.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                </p>
+              </div>
             </div>
           ))}
         </div>

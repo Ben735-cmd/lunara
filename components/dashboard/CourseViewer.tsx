@@ -36,7 +36,6 @@ export default function CourseViewer({ courseId, onBack }: Props) {
   const [saved, setSaved] = useState(false)
   const [activeTab, setActiveTab] = useState<Tab>("content")
 
-  // AI states
   const [summary, setSummary] = useState("")
   const [summaryLoading, setSummaryLoading] = useState(false)
 
@@ -65,7 +64,20 @@ export default function CourseViewer({ courseId, onBack }: Props) {
     }
   }
 
-  useEffect(() => { fetchCourse() }, [courseId])
+  useEffect(() => {
+    // Reset all states when course changes
+    setCourse(null)
+    setSummary("")
+    setQuiz([])
+    setQuizAnswers({})
+    setQuizSubmitted(false)
+    setFlashcards([])
+    setFlippedCards({})
+    setExplanation("")
+    setExplainText("")
+    setActiveTab("content")
+    fetchCourse()
+  }, [courseId])
 
   async function saveProgress(value: number) {
     setSaving(true)
@@ -124,7 +136,7 @@ export default function CourseViewer({ courseId, onBack }: Props) {
     setFlashcardsLoading(true)
     setFlippedCards({})
     const result = await callAI(
-      `Generate 8 flashcards from this course content.
+      `Generate 5 flashcards from this course content.
       Return ONLY a valid JSON array with no extra text, no markdown, no backticks. Format:
       [{"front":"term or question","back":"definition or answer"}]
       
@@ -172,6 +184,7 @@ export default function CourseViewer({ courseId, onBack }: Props) {
   if (!course) {
     return (
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: "#F0F2FF" }}>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         <div style={{ width: "40px", height: "40px", borderRadius: "50%", border: "3px solid #8B5CF6", borderTopColor: "transparent", animation: "spin 0.8s linear infinite" }} />
       </div>
     )
@@ -261,13 +274,82 @@ export default function CourseViewer({ courseId, onBack }: Props) {
           }}>
 
             {/* CONTENT TAB */}
-            {activeTab === "content" && (
-              course.content ? (
-                <div className="content-scroll" style={{ maxHeight: "65vh", overflowY: "auto", paddingRight: "8px" }}>
-                  {course.content.split("\n\n").map((paragraph, i) => (
-                    <p key={i} style={{ color: "#334155", fontSize: "0.9rem", lineHeight: 1.8, marginBottom: "16px" }}>{paragraph}</p>
-                  ))}
+     {activeTab === "content" && (
+  course.content ? (
+    <div className="content-scroll" style={{ maxHeight: "65vh", overflowY: "auto", paddingRight: "8px" }}>
+      {(() => {
+        // Clean up the raw text
+        const cleaned = course.content
+          .replace(/\s*[■□●◆▪]\s*/g, "\n• ")
+          .replace(/\n{3,}/g, "\n\n")
+          .trim()
+
+        // Split into sentences and group into paragraphs
+        const sentences = cleaned.split(/(?<=[.!?])\s+/)
+        const paragraphs: string[] = []
+        let current = ""
+
+        sentences.forEach((sentence) => {
+          current += (current ? " " : "") + sentence
+          if (current.length > 300) {
+            paragraphs.push(current.trim())
+            current = ""
+          }
+        })
+        if (current.trim()) paragraphs.push(current.trim())
+
+        return paragraphs.map((block, i) => {
+          const trimmed = block.trim()
+          if (!trimmed) return null
+
+          // Strict chapter heading: must be short and start with "Chapter N"
+          const isChapter = /^Chapter\s+\d+\b/i.test(trimmed) && trimmed.length < 80
+
+          // Bullet point
+          const isBullet = trimmed.startsWith("•")
+
+          if (isChapter) {
+            return (
+              <div key={i} style={{ marginTop: i === 0 ? 0 : "24px", marginBottom: "10px" }}>
+                <div style={{
+                  background: "linear-gradient(135deg, rgba(139,92,246,0.08), rgba(59,130,246,0.06))",
+                  border: "1.5px solid rgba(139,92,246,0.2)",
+                  borderRadius: "12px", padding: "10px 16px",
+                  display: "inline-block",
+                }}>
+                  <p style={{
+                    fontFamily: "'Space Grotesk', sans-serif",
+                    fontWeight: 700, color: "#7C3AED",
+                    fontSize: "0.85rem", margin: 0,
+                  }}>{trimmed}</p>
                 </div>
+              </div>
+            )
+          }
+
+          if (isBullet) {
+            return (
+              <div key={i} style={{ display: "flex", gap: "10px", marginBottom: "8px", alignItems: "flex-start" }}>
+                <span style={{
+                  width: "6px", height: "6px", borderRadius: "50%",
+                  background: "#8B5CF6", flexShrink: 0, marginTop: "8px",
+                }} />
+                <p style={{ color: "#334155", fontSize: "0.875rem", lineHeight: 1.75, margin: 0 }}>
+                  {trimmed.replace(/^•\s*/, "")}
+                </p>
+              </div>
+            )
+          }
+
+          return (
+            <p key={i} style={{
+              color: "#334155", fontSize: "0.875rem",
+              lineHeight: 1.8, marginBottom: "14px",
+            }}>{trimmed}</p>
+          )
+        })
+      })()}
+    </div>
               ) : (
                 <div style={{ textAlign: "center", padding: "80px 0" }}>
                   <p style={{ fontSize: "3rem", marginBottom: "16px" }}>📄</p>

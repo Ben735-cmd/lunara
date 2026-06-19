@@ -148,7 +148,7 @@ export default function AuthForm() {
 
           {/* Buttons */}
           <div className="pt-2 space-y-3">
-            <button
+            <button 
               onClick={signIn}
               disabled={loading}
               className="w-full bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-2xl py-4 font-semibold hover:scale-[1.02] transition-all duration-200 shadow-lg shadow-purple-500/20"
