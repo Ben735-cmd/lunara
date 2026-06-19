@@ -96,12 +96,17 @@ export default function CourseViewer({ courseId, onBack }: Props) {
     setTimeout(() => setSaved(false), 2000)
   }
 
-  // ─── FIXED: robust AI caller that handles multiple response shapes ───
+  // ─── FIXED: robust AI caller with auth token ───
   async function callAI(prompt: string): Promise<string> {
     try {
+      const { data: { session } } = await supabase.auth.getSession()
+
       const res = await fetch("/api/ai", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session?.access_token ?? ""}`,
+        },
         body: JSON.stringify({ prompt }),
       })
 
