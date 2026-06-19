@@ -38,19 +38,23 @@ export default function CourseViewer({ courseId, onBack }: Props) {
 
   const [summary, setSummary] = useState("")
   const [summaryLoading, setSummaryLoading] = useState(false)
+  const [summaryError, setSummaryError] = useState("")
 
   const [quiz, setQuiz] = useState<QuizQuestion[]>([])
   const [quizLoading, setQuizLoading] = useState(false)
+  const [quizError, setQuizError] = useState("")
   const [quizAnswers, setQuizAnswers] = useState<Record<number, string>>({})
   const [quizSubmitted, setQuizSubmitted] = useState(false)
 
   const [flashcards, setFlashcards] = useState<Flashcard[]>([])
   const [flashcardsLoading, setFlashcardsLoading] = useState(false)
+  const [flashcardsError, setFlashcardsError] = useState("")
   const [flippedCards, setFlippedCards] = useState<Record<number, boolean>>({})
 
   const [explainText, setExplainText] = useState("")
   const [explanation, setExplanation] = useState("")
   const [explainLoading, setExplainLoading] = useState(false)
+  const [explainError, setExplainError] = useState("")
 
   async function fetchCourse() {
     const { data } = await supabase
@@ -68,13 +72,17 @@ export default function CourseViewer({ courseId, onBack }: Props) {
     // Reset all states when course changes
     setCourse(null)
     setSummary("")
+    setSummaryError("")
     setQuiz([])
     setQuizAnswers({})
     setQuizSubmitted(false)
+    setQuizError("")
     setFlashcards([])
     setFlippedCards({})
+    setFlashcardsError("")
     setExplanation("")
     setExplainText("")
+    setExplainError("")
     setActiveTab("content")
     fetchCourse()
   }, [courseId])
@@ -88,24 +96,62 @@ export default function CourseViewer({ courseId, onBack }: Props) {
     setTimeout(() => setSaved(false), 2000)
   }
 
+  // ─── FIXED: robust AI caller that handles multiple response shapes ───
   async function callAI(prompt: string): Promise<string> {
-    const res = await fetch("/api/ai", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt }),
-    })
-    const data = await res.json()
-    return data.response || ""
+    try {
+      const res = await fetch("/api/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt }),
+      })
+
+      if (!res.ok) {
+        const errText = await res.text()
+        throw new Error(`API error ${res.status}: ${errText}`)
+      }
+
+      const data = await res.json()
+
+      // Handle all common response field names your /api/ai might return
+      const text =
+        data.response ||
+        data.result ||
+        data.text ||
+        data.message ||
+        data.content ||
+        data.output ||
+        // Handle Groq/OpenAI-style nested response
+        data.choices?.[0]?.message?.content ||
+        data.choices?.[0]?.text ||
+        ""
+
+      if (!text) {
+        console.error("AI returned empty response. Full data:", data)
+        throw new Error("AI returned an empty response. Check your /api/ai route.")
+      }
+
+      return text
+    } catch (err) {
+      console.error("callAI failed:", err)
+      throw err
+    }
   }
 
   async function generateSummary() {
     if (!course?.content) return
     setSummaryLoading(true)
-    const result = await callAI(
-      `Summarize the following course content in a clear, structured way with key points and main takeaways. Use bullet points where appropriate.\n\nCourse: ${course.title}\n\nContent:\n${course.content.slice(0, 4000)}`
-    )
-    setSummary(result)
-    setSummaryLoading(false)
+    setSummaryError("")
+    try {
+      const result = await callAI(
+        `Summarize the following course content in a clear, structured way with key points and main takeaways. Use bullet points where appropriate.\n\nCourse: ${course.title}\n\nContent:\n${course.content.slice(0, 4000)}`
+      )
+      setSummary(result)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error"
+      setSummaryError(`Failed to generate summary: ${message}`)
+    } finally {
+      setSummaryLoading(false)
+    }
   }
 
   async function generateQuiz() {
@@ -113,58 +159,86 @@ export default function CourseViewer({ courseId, onBack }: Props) {
     setQuizLoading(true)
     setQuizAnswers({})
     setQuizSubmitted(false)
-    const result = await callAI(
-      `Generate 5 multiple choice quiz questions based on this course content. 
+    setQuizError("")
+    try {
+      const result = await callAI(
+        `Generate 5 multiple choice quiz questions based on this course content. 
       Return ONLY a valid JSON array with no extra text, no markdown, no backticks. Format:
       [{"question":"...","options":["A) ...","B) ...","C) ...","D) ..."],"answer":"A) ..."}]
       
       Course: ${course.title}
       Content: ${course.content.slice(0, 4000)}`
-    )
-    try {
-      const cleaned = result.replace(/```json|```/g, "").trim()
-      const parsed = JSON.parse(cleaned)
-      setQuiz(parsed)
-    } catch {
-      setQuiz([])
+      )
+      try {
+        const cleaned = result.replace(/```json|```/g, "").trim()
+        // Extract JSON array in case there's any leading/trailing text
+        const match = cleaned.match(/\[[\s\S]*\]/)
+        const parsed = JSON.parse(match ? match[0] : cleaned)
+        if (!Array.isArray(parsed) || parsed.length === 0) throw new Error("Invalid quiz format")
+        setQuiz(parsed)
+      } catch {
+        setQuizError("AI returned an unexpected format. Try generating again.")
+        setQuiz([])
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error"
+      setQuizError(`Failed to generate quiz: ${message}`)
+    } finally {
+      setQuizLoading(false)
     }
-    setQuizLoading(false)
   }
 
   async function generateFlashcards() {
     if (!course?.content) return
     setFlashcardsLoading(true)
     setFlippedCards({})
-    const result = await callAI(
-      `Generate 5 flashcards from this course content.
+    setFlashcardsError("")
+    try {
+      const result = await callAI(
+        `Generate 5 flashcards from this course content.
       Return ONLY a valid JSON array with no extra text, no markdown, no backticks. Format:
       [{"front":"term or question","back":"definition or answer"}]
       
       Course: ${course.title}
       Content: ${course.content.slice(0, 4000)}`
-    )
-    try {
-      const cleaned = result.replace(/```json|```/g, "").trim()
-      const parsed = JSON.parse(cleaned)
-      setFlashcards(parsed)
-    } catch {
-      setFlashcards([])
+      )
+      try {
+        const cleaned = result.replace(/```json|```/g, "").trim()
+        const match = cleaned.match(/\[[\s\S]*\]/)
+        const parsed = JSON.parse(match ? match[0] : cleaned)
+        if (!Array.isArray(parsed) || parsed.length === 0) throw new Error("Invalid flashcard format")
+        setFlashcards(parsed)
+      } catch {
+        setFlashcardsError("AI returned an unexpected format. Try generating again.")
+        setFlashcards([])
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error"
+      setFlashcardsError(`Failed to generate flashcards: ${message}`)
+    } finally {
+      setFlashcardsLoading(false)
     }
-    setFlashcardsLoading(false)
   }
 
   async function generateExplanation() {
     if (!explainText.trim()) return
     setExplainLoading(true)
-    const result = await callAI(
-      `Explain the following concept or text in simple, easy-to-understand terms. Use examples where helpful.
+    setExplainError("")
+    try {
+      const result = await callAI(
+        `Explain the following concept or text in simple, easy-to-understand terms. Use examples where helpful.
       
       Context course: ${course?.title}
       
       Text to explain: ${explainText}`
-    )
-    setExplanation(result)
-    setExplainLoading(false)
+      )
+      setExplanation(result)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error"
+      setExplainError(`Failed to generate explanation: ${message}`)
+    } finally {
+      setExplainLoading(false)
+    }
   }
 
   const tabs: { id: Tab; label: string; icon: string }[] = [
@@ -180,6 +254,21 @@ export default function CourseViewer({ courseId, onBack }: Props) {
     : progress >= 50
     ? { bg: "linear-gradient(135deg, #8B5CF6, #3B82F6)", emoji: "📖", label: "Halfway there", sub: `${100 - progress}% remaining` }
     : { bg: "linear-gradient(135deg, #1E293B, #0F172A)", emoji: "🚀", label: "Just started", sub: `${100 - progress}% remaining` }
+
+  // ─── Error Banner ───────────────────────────────────────────────────────────
+  function ErrorBanner({ message }: { message: string }) {
+    return (
+      <div style={{
+        background: "rgba(239,68,68,0.06)",
+        border: "1.5px solid rgba(239,68,68,0.2)",
+        borderRadius: "14px", padding: "14px 18px",
+        color: "#DC2626", fontSize: "0.85rem",
+        lineHeight: 1.5, marginTop: "12px",
+      }}>
+        ⚠️ {message}
+      </div>
+    )
+  }
 
   if (!course) {
     return (
@@ -274,82 +363,77 @@ export default function CourseViewer({ courseId, onBack }: Props) {
           }}>
 
             {/* CONTENT TAB */}
-     {activeTab === "content" && (
-  course.content ? (
-    <div className="content-scroll" style={{ maxHeight: "65vh", overflowY: "auto", paddingRight: "8px" }}>
-      {(() => {
-        // Clean up the raw text
-        const cleaned = course.content
-          .replace(/\s*[■□●◆▪]\s*/g, "\n• ")
-          .replace(/\n{3,}/g, "\n\n")
-          .trim()
+            {activeTab === "content" && (
+              course.content ? (
+                <div className="content-scroll" style={{ maxHeight: "65vh", overflowY: "auto", paddingRight: "8px" }}>
+                  {(() => {
+                    const cleaned = course.content
+                      .replace(/\s*[■□●◆▪]\s*/g, "\n• ")
+                      .replace(/\n{3,}/g, "\n\n")
+                      .trim()
 
-        // Split into sentences and group into paragraphs
-        const sentences = cleaned.split(/(?<=[.!?])\s+/)
-        const paragraphs: string[] = []
-        let current = ""
+                    const sentences = cleaned.split(/(?<=[.!?])\s+/)
+                    const paragraphs: string[] = []
+                    let current = ""
 
-        sentences.forEach((sentence) => {
-          current += (current ? " " : "") + sentence
-          if (current.length > 300) {
-            paragraphs.push(current.trim())
-            current = ""
-          }
-        })
-        if (current.trim()) paragraphs.push(current.trim())
+                    sentences.forEach((sentence) => {
+                      current += (current ? " " : "") + sentence
+                      if (current.length > 300) {
+                        paragraphs.push(current.trim())
+                        current = ""
+                      }
+                    })
+                    if (current.trim()) paragraphs.push(current.trim())
 
-        return paragraphs.map((block, i) => {
-          const trimmed = block.trim()
-          if (!trimmed) return null
+                    return paragraphs.map((block, i) => {
+                      const trimmed = block.trim()
+                      if (!trimmed) return null
 
-          // Strict chapter heading: must be short and start with "Chapter N"
-          const isChapter = /^Chapter\s+\d+\b/i.test(trimmed) && trimmed.length < 80
+                      const isChapter = /^Chapter\s+\d+\b/i.test(trimmed) && trimmed.length < 80
+                      const isBullet = trimmed.startsWith("•")
 
-          // Bullet point
-          const isBullet = trimmed.startsWith("•")
+                      if (isChapter) {
+                        return (
+                          <div key={i} style={{ marginTop: i === 0 ? 0 : "24px", marginBottom: "10px" }}>
+                            <div style={{
+                              background: "linear-gradient(135deg, rgba(139,92,246,0.08), rgba(59,130,246,0.06))",
+                              border: "1.5px solid rgba(139,92,246,0.2)",
+                              borderRadius: "12px", padding: "10px 16px",
+                              display: "inline-block",
+                            }}>
+                              <p style={{
+                                fontFamily: "'Space Grotesk', sans-serif",
+                                fontWeight: 700, color: "#7C3AED",
+                                fontSize: "0.85rem", margin: 0,
+                              }}>{trimmed}</p>
+                            </div>
+                          </div>
+                        )
+                      }
 
-          if (isChapter) {
-            return (
-              <div key={i} style={{ marginTop: i === 0 ? 0 : "24px", marginBottom: "10px" }}>
-                <div style={{
-                  background: "linear-gradient(135deg, rgba(139,92,246,0.08), rgba(59,130,246,0.06))",
-                  border: "1.5px solid rgba(139,92,246,0.2)",
-                  borderRadius: "12px", padding: "10px 16px",
-                  display: "inline-block",
-                }}>
-                  <p style={{
-                    fontFamily: "'Space Grotesk', sans-serif",
-                    fontWeight: 700, color: "#7C3AED",
-                    fontSize: "0.85rem", margin: 0,
-                  }}>{trimmed}</p>
+                      if (isBullet) {
+                        return (
+                          <div key={i} style={{ display: "flex", gap: "10px", marginBottom: "8px", alignItems: "flex-start" }}>
+                            <span style={{
+                              width: "6px", height: "6px", borderRadius: "50%",
+                              background: "#8B5CF6", flexShrink: 0, marginTop: "8px",
+                            }} />
+                            <p style={{ color: "#334155", fontSize: "0.875rem", lineHeight: 1.75, margin: 0 }}>
+                              {trimmed.replace(/^•\s*/, "")}
+                            </p>
+                          </div>
+                        )
+                      }
+
+                      return (
+                        <p key={i} style={{
+                          color: "#334155", fontSize: "0.875rem",
+                          lineHeight: 1.8, marginBottom: "14px",
+                        }}>{trimmed}</p>
+                      )
+                    })
+                  })()}
                 </div>
-              </div>
-            )
-          }
-
-          if (isBullet) {
-            return (
-              <div key={i} style={{ display: "flex", gap: "10px", marginBottom: "8px", alignItems: "flex-start" }}>
-                <span style={{
-                  width: "6px", height: "6px", borderRadius: "50%",
-                  background: "#8B5CF6", flexShrink: 0, marginTop: "8px",
-                }} />
-                <p style={{ color: "#334155", fontSize: "0.875rem", lineHeight: 1.75, margin: 0 }}>
-                  {trimmed.replace(/^•\s*/, "")}
-                </p>
-              </div>
-            )
-          }
-
-          return (
-            <p key={i} style={{
-              color: "#334155", fontSize: "0.875rem",
-              lineHeight: 1.8, marginBottom: "14px",
-            }}>{trimmed}</p>
-          )
-        })
-      })()}
-    </div>
               ) : (
                 <div style={{ textAlign: "center", padding: "80px 0" }}>
                   <p style={{ fontSize: "3rem", marginBottom: "16px" }}>📄</p>
@@ -389,13 +473,15 @@ export default function CourseViewer({ courseId, onBack }: Props) {
                   </div>
                 )}
 
-                {summary && !summaryLoading && (
+                {summaryError && !summaryLoading && <ErrorBanner message={summaryError} />}
+
+                {summary && !summaryLoading && !summaryError && (
                   <div style={{ color: "#334155", fontSize: "0.9rem", lineHeight: 1.8, whiteSpace: "pre-wrap" }}>
                     {summary}
                   </div>
                 )}
 
-                {!summary && !summaryLoading && (
+                {!summary && !summaryLoading && !summaryError && (
                   <div style={{ textAlign: "center", padding: "60px 0" }}>
                     <p style={{ fontSize: "2.5rem", marginBottom: "12px" }}>✨</p>
                     <p style={{ color: "#94A3B8", fontWeight: 500 }}>Click "Generate Summary" to get started</p>
@@ -433,6 +519,8 @@ export default function CourseViewer({ courseId, onBack }: Props) {
                     <p style={{ color: "#94A3B8" }}>Generating quiz questions...</p>
                   </div>
                 )}
+
+                {quizError && !quizLoading && <ErrorBanner message={quizError} />}
 
                 {quiz.length > 0 && !quizLoading && (
                   <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
@@ -500,7 +588,7 @@ export default function CourseViewer({ courseId, onBack }: Props) {
                   </div>
                 )}
 
-                {quiz.length === 0 && !quizLoading && (
+                {quiz.length === 0 && !quizLoading && !quizError && (
                   <div style={{ textAlign: "center", padding: "60px 0" }}>
                     <p style={{ fontSize: "2.5rem", marginBottom: "12px" }}>🧠</p>
                     <p style={{ color: "#94A3B8", fontWeight: 500 }}>Click "Generate Quiz" to test yourself</p>
@@ -539,6 +627,8 @@ export default function CourseViewer({ courseId, onBack }: Props) {
                   </div>
                 )}
 
+                {flashcardsError && !flashcardsLoading && <ErrorBanner message={flashcardsError} />}
+
                 {flashcards.length > 0 && !flashcardsLoading && (
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "16px" }}>
                     {flashcards.map((card, i) => (
@@ -567,7 +657,7 @@ export default function CourseViewer({ courseId, onBack }: Props) {
                   </div>
                 )}
 
-                {flashcards.length === 0 && !flashcardsLoading && (
+                {flashcards.length === 0 && !flashcardsLoading && !flashcardsError && (
                   <div style={{ textAlign: "center", padding: "60px 0" }}>
                     <p style={{ fontSize: "2.5rem", marginBottom: "12px" }}>🃏</p>
                     <p style={{ color: "#94A3B8", fontWeight: 500 }}>Click "Generate Flashcards" to study</p>
@@ -595,7 +685,7 @@ export default function CourseViewer({ courseId, onBack }: Props) {
                     fontSize: "0.9rem", color: "#334155",
                     outline: "none", resize: "vertical",
                     fontFamily: "inherit", lineHeight: 1.7,
-                    marginBottom: "12px",
+                    marginBottom: "12px", boxSizing: "border-box",
                   }}
                 />
 
@@ -621,7 +711,9 @@ export default function CourseViewer({ courseId, onBack }: Props) {
                   </div>
                 )}
 
-                {explanation && !explainLoading && (
+                {explainError && !explainLoading && <ErrorBanner message={explainError} />}
+
+                {explanation && !explainLoading && !explainError && (
                   <div style={{
                     background: "rgba(139,92,246,0.05)",
                     border: "1.5px solid rgba(139,92,246,0.15)",
