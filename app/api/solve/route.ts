@@ -2,6 +2,14 @@ import { NextRequest, NextResponse } from "next/server"
 import mammoth from "mammoth"
 import { extractText } from "unpdf"
 
+function sanitizeText(text: string): string {
+  return text
+    .replace(/\u0000/g, "")
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "")
+    .replace(/[\uD800-\uDFFF]/g, "")
+    .replace(/\\u[0-9a-fA-F]{0,3}(?![0-9a-fA-F])/g, "")
+}
+
 async function solveWithGroq(questionText: string): Promise<string> {
   const Groq = (await import("groq-sdk")).default
   const client = new Groq({ apiKey: process.env.GROQ_API_KEY })
@@ -55,13 +63,13 @@ export async function POST(req: NextRequest) {
     if (file.name.endsWith(".pdf")) {
       const { extractText } = await import("unpdf")
       const { text } = await extractText(new Uint8Array(buffer), { mergePages: true })
-      questionText = text
+      questionText = sanitizeText(text)
     }
 
     // Handle Word
     else if (file.name.endsWith(".docx")) {
       const result = await mammoth.extractRawText({ buffer })
-      questionText = result.value
+      questionText = sanitizeText(result.value)
     }
 
     // Handle images
@@ -69,7 +77,6 @@ export async function POST(req: NextRequest) {
       const base64 = buffer.toString("base64")
       const mimeType = file.type
 
-      // Use Groq vision model for images
       const Groq = (await import("groq-sdk")).default
       const client = new Groq({ apiKey: process.env.GROQ_API_KEY })
 
@@ -105,7 +112,9 @@ Format as:
         max_tokens: 2048,
       })
 
-      const solution = completion.choices[0]?.message?.content || "Could not read image."
+      const solution = sanitizeText(
+        completion.choices[0]?.message?.content || "Could not read image."
+      )
       return NextResponse.json({ solution })
     }
 

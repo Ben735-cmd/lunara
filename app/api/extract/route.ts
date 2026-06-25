@@ -2,15 +2,19 @@ import { NextRequest, NextResponse } from "next/server"
 import mammoth from "mammoth"
 import { extractText } from "unpdf"
 
+function sanitizeText(text: string): string {
+  return text
+    .replace(/\u0000/g, "")
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "")
+    .replace(/[\uD800-\uDFFF]/g, "")
+    .replace(/\\u[0-9a-fA-F]{0,3}(?![0-9a-fA-F])/g, "")
+}
+
 function formatExtractedText(raw: string): string {
-  return raw
-    // Add line break before numbered points like "1.", "2.", etc.
+  return sanitizeText(raw)
     .replace(/(\s)(\d+)\.\s+/g, "\n\n$2. ")
-    // Add line break before "Chapter", "Section", "Unit" headings
     .replace(/(\s)(Chapter|Section|Unit|Topic|Part)\s+/gi, "\n\n$2 ")
-    // Clean up excessive whitespace
     .replace(/[ \t]{2,}/g, " ")
-    // Clean up more than 2 newlines
     .replace(/\n{3,}/g, "\n\n")
     .trim()
 }
