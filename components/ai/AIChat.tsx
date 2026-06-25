@@ -29,49 +29,56 @@ export default function AIChat() {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({
-          prompt,
-        }),
+        body: JSON.stringify({ prompt }),
       })
 
       const data = await res.json()
 
       setResponse(
         data.response ||
-          data.error ||
-          "No response received."
+        data.error ||
+        "No response received."
       )
     } catch (error) {
       console.error(error)
-
-      setResponse(
-        "Failed to connect to AI."
-      )
+      setResponse("Failed to connect to AI.")
     }
 
     setLoading(false)
+  }
+
+  function clearChat() {
+    setPrompt("")
+    setResponse("")
   }
 
   return (
     <div>
       <textarea
         value={prompt}
-        onChange={(e) =>
-          setPrompt(e.target.value)
-        }
+        onChange={(e) => setPrompt(e.target.value)}
         placeholder="Ask anything..."
         className="w-full min-h-[120px] border border-black/10 rounded-2xl p-4 outline-none focus:ring-2 focus:ring-purple-400"
       />
 
-      <button
-        onClick={askAI}
-        disabled={loading}
-        className="mt-4 bg-gradient-to-r from-purple-500 to-blue-500 text-white px-5 py-3 rounded-2xl font-medium"
-      >
-        {loading
-          ? "Thinking..."
-          : "Ask AI"}
-      </button>
+      <div className="mt-4 flex gap-3">
+        <button
+          onClick={askAI}
+          disabled={loading}
+          className="bg-gradient-to-r from-purple-500 to-blue-500 text-white px-5 py-3 rounded-2xl font-medium disabled:opacity-60"
+        >
+          {loading ? "Thinking..." : "Ask AI"}
+        </button>
+
+        {(prompt || response) && (
+          <button
+            onClick={clearChat}
+            className="border border-black/10 text-[#64748B] px-5 py-3 rounded-2xl font-medium hover:bg-[#F8FAFC] transition-colors"
+          >
+            Clear
+          </button>
+        )}
+      </div>
 
       {response && (
         <div className="mt-6 bg-[#F8FAFC] border border-black/5 rounded-2xl p-4 whitespace-pre-wrap">
