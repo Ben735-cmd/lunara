@@ -2,16 +2,14 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import Groq from "groq-sdk"
 
-// Server-side Supabase client, used only to verify the caller's access token.
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-const MAX_PROMPT_LENGTH = 2000
+const MAX_PROMPT_LENGTH = 8000
 
 export async function POST(req: NextRequest) {
-  // 1. Require a logged-in user — reject anything without a valid session token.
   const authHeader = req.headers.get("authorization")
   const token = authHeader?.replace("Bearer ", "")
 
@@ -25,7 +23,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Your session has expired. Please log in again." }, { status: 401 })
   }
 
-  // 2. Validate the request body before spending any AI tokens on it.
   let prompt: unknown
   try {
     const body = await req.json()
@@ -45,7 +42,6 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  // 3. Call Groq, with proper error handling so a provider hiccup doesn't 500 the route.
   try {
     const client = new Groq({ apiKey: process.env.GROQ_API_KEY })
 
@@ -59,7 +55,7 @@ export async function POST(req: NextRequest) {
         },
         { role: "user", content: prompt },
       ],
-      max_tokens: 1024,
+      max_tokens: 4096,
     })
 
     const text = completion.choices[0]?.message?.content || "No response received."

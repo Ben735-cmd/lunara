@@ -69,7 +69,6 @@ export default function CourseViewer({ courseId, onBack }: Props) {
   }
 
   useEffect(() => {
-    // Reset all states when course changes
     setCourse(null)
     setSummary("")
     setSummaryError("")
@@ -96,7 +95,6 @@ export default function CourseViewer({ courseId, onBack }: Props) {
     setTimeout(() => setSaved(false), 2000)
   }
 
-  // ─── FIXED: robust AI caller with auth token ───
   async function callAI(prompt: string): Promise<string> {
     try {
       const { data: { session } } = await supabase.auth.getSession()
@@ -117,7 +115,6 @@ export default function CourseViewer({ courseId, onBack }: Props) {
 
       const data = await res.json()
 
-      // Handle all common response field names your /api/ai might return
       const text =
         data.response ||
         data.result ||
@@ -125,13 +122,11 @@ export default function CourseViewer({ courseId, onBack }: Props) {
         data.message ||
         data.content ||
         data.output ||
-        // Handle Groq/OpenAI-style nested response
         data.choices?.[0]?.message?.content ||
         data.choices?.[0]?.text ||
         ""
 
       if (!text) {
-        console.error("AI returned empty response. Full data:", data)
         throw new Error("AI returned an empty response. Check your /api/ai route.")
       }
 
@@ -148,7 +143,7 @@ export default function CourseViewer({ courseId, onBack }: Props) {
     setSummaryError("")
     try {
       const result = await callAI(
-        `Summarize the following course content in a clear, structured way with key points and main takeaways. Use bullet points where appropriate.\n\nCourse: ${course.title}\n\nContent:\n${course.content.slice(0, 1500)}`
+        `Summarize the following course content in a clear, structured way with key points and main takeaways. Use bullet points where appropriate.\n\nCourse: ${course.title}\n\nContent:\n${course.content.slice(0, 5000)}`
       )
       setSummary(result)
     } catch (err: unknown) {
@@ -167,16 +162,15 @@ export default function CourseViewer({ courseId, onBack }: Props) {
     setQuizError("")
     try {
       const result = await callAI(
-        `Generate 5 multiple choice quiz questions based on this course content. 
+        `Generate 10 multiple choice quiz questions based on this course content.
       Return ONLY a valid JSON array with no extra text, no markdown, no backticks. Format:
       [{"question":"...","options":["A) ...","B) ...","C) ...","D) ..."],"answer":"A) ..."}]
       
       Course: ${course.title}
-      Content: ${course.content.slice(0, 1500)}`
+      Content: ${course.content.slice(0, 4000)}`
       )
       try {
         const cleaned = result.replace(/```json|```/g, "").trim()
-        // Extract JSON array in case there's any leading/trailing text
         const match = cleaned.match(/\[[\s\S]*\]/)
         const parsed = JSON.parse(match ? match[0] : cleaned)
         if (!Array.isArray(parsed) || parsed.length === 0) throw new Error("Invalid quiz format")
@@ -200,12 +194,12 @@ export default function CourseViewer({ courseId, onBack }: Props) {
     setFlashcardsError("")
     try {
       const result = await callAI(
-        `Generate 5 flashcards from this course content.
+        `Generate 10 flashcards from this course content.
       Return ONLY a valid JSON array with no extra text, no markdown, no backticks. Format:
       [{"front":"term or question","back":"definition or answer"}]
       
       Course: ${course.title}
-      Content: ${course.content.slice(0, 1500)}`
+      Content: ${course.content.slice(0, 4000)}`
       )
       try {
         const cleaned = result.replace(/```json|```/g, "").trim()
@@ -260,7 +254,6 @@ export default function CourseViewer({ courseId, onBack }: Props) {
     ? { bg: "linear-gradient(135deg, #8B5CF6, #3B82F6)", emoji: "📖", label: "Halfway there", sub: `${100 - progress}% remaining` }
     : { bg: "linear-gradient(135deg, #1E293B, #0F172A)", emoji: "🚀", label: "Just started", sub: `${100 - progress}% remaining` }
 
-  // ─── Error Banner ───────────────────────────────────────────────────────────
   function ErrorBanner({ message }: { message: string }) {
     return (
       <div style={{
