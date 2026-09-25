@@ -32,6 +32,7 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
         <meta name="google-site-verification" content="5wjsjCx_SfgchpVIDOItLy4LUons9mYqHbOoh_HATK4" />
+        <meta name="google-adsense-account" content="ca-pub-1275139836297308" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Lunara" />
