@@ -37,6 +37,11 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="msapplication-TileColor" content="#8B5CF6" />
         <meta name="msapplication-TileImage" content="/icons/icon-144x144.png" />
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1275139836297308"
+          crossOrigin="anonymous"
+        ></script>
       </head>
       <body className="antialiased">
         <script
