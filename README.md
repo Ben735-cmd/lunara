@@ -75,3 +75,7 @@ supabase/       SQL for database setup
 ## Deployment
 
 The app is deployed on Vercel from this repository. Add the three environment variables above in the Vercel project settings.
+
+## License
+
+Released under the [MIT License](LICENSE).
