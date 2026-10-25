@@ -1,36 +1,77 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Lunara
 
-## Getting Started
+Smarter learning for modern students. Lunara is a student dashboard that puts your courses, documents, notes, assignments and AI study tools in one place.
 
-First, run the development server:
+**Live app:** https://lunara-neon.vercel.app
+
+## Features
+
+- **Courses and documents** – organise coursework and upload PDF or DOCX files; text is extracted for study use.
+- **AI summaries and quizzes** – generate summaries and 10-question quizzes from your course material, plus an AI study assistant.
+- **Spaced-repetition flashcards** – cards are scheduled with the SM-2 algorithm so you review what you are about to forget.
+- **Notes** – keep notes alongside your courses.
+- **Assignments and calendar** – track deadlines and see them on a calendar.
+- **Question solver** – step-by-step solutions to typed questions or uploaded problems.
+- **Installable PWA** – works as an app on phones and desktops, with a mobile-friendly sidebar drawer.
+
+## Tech stack
+
+- [Next.js](https://nextjs.org) 16 (App Router), React 19, TypeScript
+- [Tailwind CSS](https://tailwindcss.com) 4
+- [Supabase](https://supabase.com) for authentication and the Postgres database (Row Level Security enabled)
+- [Groq](https://groq.com) (Llama models) for AI features
+- `unpdf` and `mammoth` for PDF and DOCX text extraction
+- Deployed on [Vercel](https://vercel.com)
+
+## Getting started
+
+### 1. Install dependencies
+
+```bash
+npm install
+```
+
+### 2. Configure environment variables
+
+Create a `.env.local` file in the project root:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-project-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+GROQ_API_KEY=your-groq-api-key
+```
+
+### 3. Set up the database
+
+Create a Supabase project, then run the SQL in the Supabase SQL editor. `supabase/flashcards.sql` creates the flashcards table with Row Level Security policies. The app also expects `courses`, `assignments`, `notes`, `profiles` and `study_sessions` tables, plus an `avatars` storage bucket, each restricted to the owning user with Row Level Security.
+
+### 4. Run the dev server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Command         | What it does                      |
+| --------------- | --------------------------------- |
+| `npm run dev`   | Start the development server      |
+| `npm run build` | Create a production build         |
+| `npm run start` | Run the production build          |
+| `npm run lint`  | Lint the codebase with ESLint     |
 
-## Learn More
+## Project structure
 
-To learn more about Next.js, take a look at the following resources:
+```
+app/            Routes, layout and API routes (/api/ai, /api/solve, /api/extract)
+components/     UI grouped by area: auth, dashboard, ai, layout, ui
+lib/            Supabase client and the SM-2 scheduling logic
+public/         PWA manifest, service worker, icons
+supabase/       SQL for database setup
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Deployment
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The app is deployed on Vercel from this repository. Add the three environment variables above in the Vercel project settings.
