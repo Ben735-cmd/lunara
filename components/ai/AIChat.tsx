@@ -57,23 +57,24 @@ export default function AIChat() {
       <textarea
         value={prompt}
         onChange={(e) => setPrompt(e.target.value)}
-        placeholder="Ask anything..."
-        className="w-full min-h-[120px] border border-black/10 rounded-2xl p-4 outline-none focus:ring-2 focus:ring-purple-400"
+        placeholder="Ask a question"
+        aria-label="Your question"
+        className="min-h-[120px] w-full rounded-lg border border-line bg-surface p-3.5 text-ink placeholder:text-ink-muted/70 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
       />
 
       <div className="mt-4 flex gap-3">
         <button
           onClick={askAI}
           disabled={loading}
-          className="bg-gradient-to-r from-purple-500 to-blue-500 text-white px-5 py-3 rounded-2xl font-medium disabled:opacity-60"
+          className="rounded-lg bg-accent px-4 py-2.5 text-sm font-medium text-on-accent transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {loading ? "Thinking..." : "Ask AI"}
+          {loading ? "Thinking..." : "Ask"}
         </button>
 
         {(prompt || response) && (
           <button
             onClick={clearChat}
-            className="border border-black/10 text-[#64748B] px-5 py-3 rounded-2xl font-medium hover:bg-[#F8FAFC] transition-colors"
+            className="rounded-lg border border-line px-4 py-2.5 text-sm font-medium text-ink-muted transition-colors hover:bg-paper hover:text-ink"
           >
             Clear
           </button>
@@ -81,7 +82,7 @@ export default function AIChat() {
       </div>
 
       {response && (
-        <div className="mt-6 bg-[#F8FAFC] border border-black/5 rounded-2xl p-4 whitespace-pre-wrap">
+        <div className="mt-5 whitespace-pre-wrap rounded-lg border border-line bg-paper p-4 text-sm leading-relaxed text-ink">
           {response}
         </div>
       )}

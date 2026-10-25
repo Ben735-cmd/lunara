@@ -15,6 +15,7 @@
   --accent: #0e7c5a;
   --accent-strong: #0a6246;
   --accent-tint: #e3f1eb;
+  --on-accent: #ffffff;
   --danger: #b3321f;
   --danger-tint: #fbeae6;
 }
@@ -28,6 +29,7 @@
   --color-accent: var(--accent);
   --color-accent-strong: var(--accent-strong);
   --color-accent-tint: var(--accent-tint);
+  --color-on-accent: var(--on-accent);
   --color-danger: var(--danger);
   --color-danger-tint: var(--danger-tint);
   --font-sans: var(--font-instrument), ui-sans-serif, system-ui, sans-serif;
@@ -52,4 +54,19 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* Dark theme: the dashboard adds the "dark" class when dark mode is on. */
+.dark {
+  --paper: #0f1613;
+  --surface: #161f1a;
+  --ink: #e6eee9;
+  --ink-muted: #94a59c;
+  --line: #27332d;
+  --accent: #34b88c;
+  --accent-strong: #5ccfa8;
+  --accent-tint: #15302a;
+  --on-accent: #0a1712;
+  --danger: #f08a77;
+  --danger-tint: #35201c;
 }

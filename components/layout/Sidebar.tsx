@@ -1,6 +1,18 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import {
+  BookOpen,
+  Calculator,
+  CalendarDays,
+  ChevronDown,
+  LayoutDashboard,
+  ListChecks,
+  LogOut,
+  Menu,
+  NotebookText,
+  type LucideIcon,
+} from "lucide-react"
 import { supabase } from "../../lib/supabase"
 
 type Course = {
@@ -17,12 +29,11 @@ type SidebarProps = {
   setActiveNav: (nav: string) => void
 }
 
-const navIcons: Record<string, string> = {
-  Dashboard: "⊞",
-  Assignments: "✓",
-  Notes: "📝",
-  Calendar: "📅",
-  Solver: "🧮",
+const navIcons: Record<string, LucideIcon> = {
+  Assignments: ListChecks,
+  Notes: NotebookText,
+  Calendar: CalendarDays,
+  Solver: Calculator,
 }
 
 const MOBILE_BREAKPOINT = 768
@@ -81,6 +92,12 @@ export default function Sidebar({ logout, onSelectCourse, selectedCourseId, acti
 
   const navItems = ["Assignments", "Notes", "Calendar", "Solver"]
 
+  const itemBase =
+    "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors"
+  const itemIdle = "text-ink-muted hover:bg-paper hover:text-ink"
+  const itemActive = "bg-accent-tint text-accent-strong"
+  const dashboardActive = activeNav === "Dashboard" && !selectedCourseId
+
   return (
     <>
       {/* Mobile menu toggle button */}
@@ -88,25 +105,11 @@ export default function Sidebar({ logout, onSelectCourse, selectedCourseId, acti
         <button
           onClick={() => setMobileOpen(true)}
           aria-label="Open menu"
-          style={{
-            position: "fixed",
-            top: "16px",
-            left: "16px",
-            zIndex: 60,
-            width: "44px",
-            height: "44px",
-            borderRadius: "12px",
-            background: "#0F0F20",
-            border: "1px solid rgba(255,255,255,0.1)",
-            color: "white",
-            fontSize: "1.1rem",
-            display: mobileOpen ? "none" : "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            cursor: "pointer",
-          }}
+          className={`fixed left-4 top-4 z-[60] h-11 w-11 items-center justify-center rounded-lg border border-line bg-surface text-ink ${
+            mobileOpen ? "hidden" : "flex"
+          }`}
         >
-          ☰
+          <Menu size={20} />
         </button>
       )}
 
@@ -114,133 +117,60 @@ export default function Sidebar({ logout, onSelectCourse, selectedCourseId, acti
       {isMobile && mobileOpen && (
         <div
           onClick={() => setMobileOpen(false)}
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.5)",
-            zIndex: 40,
-          }}
+          className="fixed inset-0 z-40 bg-black/40"
         />
       )}
 
-      <aside style={{
-        width: "260px",
-        background: "linear-gradient(180deg, #0D0D1A 0%, #0F0F20 100%)",
-        borderRight: "1px solid rgba(255,255,255,0.06)",
-        padding: "28px 16px",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "space-between",
-        minHeight: "100vh",
-        ...(isMobile
-          ? {
-              position: "fixed",
-              top: 0,
-              left: 0,
-              height: "100vh",
-              zIndex: 50,
-              transform: mobileOpen ? "translateX(0)" : "translateX(-100%)",
-              transition: "transform 0.25s ease",
-              boxShadow: mobileOpen ? "0 0 40px rgba(0,0,0,0.5)" : "none",
-            }
-          : {}),
-      }}>
+      <aside
+        className={`flex min-h-screen w-[260px] flex-col justify-between border-r border-line bg-surface px-3 py-6 ${
+          isMobile ? "fixed left-0 top-0 z-50 h-screen transition-transform duration-200" : ""
+        } ${isMobile && !mobileOpen ? "-translate-x-full" : ""}`}
+      >
         <div>
-          {/* Logo */}
-          <div style={{ marginBottom: "40px", padding: "0 8px" }}>
-            <div style={{
-              width: "44px", height: "44px",
-              borderRadius: "14px",
-              background: "linear-gradient(135deg, #8B5CF6, #3B82F6)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: "20px", fontWeight: 800, color: "white",
-              boxShadow: "0 4px 20px rgba(139,92,246,0.4)",
-            }}>L</div>
-            <h1 style={{ color: "white", fontSize: "1.25rem", fontWeight: 700, marginTop: "14px" }}>Lunara</h1>
-            <p style={{ color: "#475569", fontSize: "0.75rem", marginTop: "2px" }}>University Workspace</p>
-          </div>
+          <p className="mb-8 px-3 text-lg font-semibold tracking-tight text-ink">Lunara</p>
 
-          {/* Nav */}
-          <nav style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-
-            {/* Dashboard */}
+          <nav className="flex flex-col gap-1" aria-label="Main">
             <button
               onClick={() => { setActiveNav("Dashboard"); onSelectCourse(""); closeOnMobile() }}
-              style={{
-                width: "100%",
-                background: activeNav === "Dashboard" && !selectedCourseId ? "rgba(139,92,246,0.15)" : "transparent",
-                border: activeNav === "Dashboard" && !selectedCourseId ? "1px solid rgba(139,92,246,0.3)" : "1px solid transparent",
-                borderRadius: "14px",
-                padding: "12px 14px",
-                textAlign: "left",
-                color: activeNav === "Dashboard" && !selectedCourseId ? "#A78BFA" : "#64748B",
-                fontSize: "0.875rem",
-                fontWeight: 500,
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                transition: "all 0.2s",
-              }}
+              aria-current={dashboardActive ? "page" : undefined}
+              className={`${itemBase} ${dashboardActive ? itemActive : itemIdle}`}
             >
-              <span>⊞</span> Dashboard
+              <LayoutDashboard size={18} aria-hidden="true" /> Dashboard
             </button>
 
             {/* Courses dropdown */}
             <div>
               <button
                 onClick={() => { setCoursesOpen(!coursesOpen); setActiveNav("Courses") }}
-                style={{
-                  width: "100%",
-                  background: activeNav === "Courses" ? "rgba(139,92,246,0.15)" : "transparent",
-                  border: activeNav === "Courses" ? "1px solid rgba(139,92,246,0.3)" : "1px solid transparent",
-                  borderRadius: "14px",
-                  padding: "12px 14px",
-                  textAlign: "left",
-                  color: activeNav === "Courses" ? "#A78BFA" : "#64748B",
-                  fontSize: "0.875rem",
-                  fontWeight: 500,
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  transition: "all 0.2s",
-                }}
+                aria-expanded={coursesOpen}
+                className={`${itemBase} justify-between ${activeNav === "Courses" ? itemActive : itemIdle}`}
               >
-                <span style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                  <span>📚</span> Courses
+                <span className="flex items-center gap-3">
+                  <BookOpen size={18} aria-hidden="true" /> Courses
                 </span>
-                <span style={{
-                  fontSize: "0.7rem",
-                  transform: coursesOpen ? "rotate(180deg)" : "rotate(0deg)",
-                  transition: "transform 0.2s",
-                  display: "inline-block",
-                }}>▾</span>
+                <ChevronDown
+                  size={16}
+                  aria-hidden="true"
+                  className={`transition-transform ${coursesOpen ? "rotate-180" : ""}`}
+                />
               </button>
 
               {coursesOpen && (
-                <div style={{ marginLeft: "12px", marginTop: "4px", display: "flex", flexDirection: "column", gap: "2px" }}>
+                <div className="ml-4 mt-1 flex flex-col gap-0.5 border-l border-line pl-2">
                   {courses.length === 0 ? (
-                    <p style={{ color: "#334155", fontSize: "0.75rem", padding: "8px 14px" }}>No courses yet</p>
+                    <p className="px-3 py-2 text-xs text-ink-muted">No courses yet</p>
                   ) : (
                     courses.map((course) => (
                       <button
                         key={course.id}
                         onClick={() => { onSelectCourse(course.id); setActiveNav("Courses"); closeOnMobile() }}
-                        style={{
-                          width: "100%",
-                          textAlign: "left",
-                          padding: "10px 14px",
-                          borderRadius: "12px",
-                          background: selectedCourseId === course.id ? "rgba(139,92,246,0.12)" : "transparent",
-                          border: selectedCourseId === course.id ? "1px solid rgba(139,92,246,0.25)" : "1px solid transparent",
-                          color: selectedCourseId === course.id ? "#C4B5FD" : "#64748B",
-                          cursor: "pointer",
-                          transition: "all 0.2s",
-                        }}
+                        aria-current={selectedCourseId === course.id ? "page" : undefined}
+                        className={`w-full rounded-lg px-3 py-2 text-left transition-colors ${
+                          selectedCourseId === course.id ? itemActive : itemIdle
+                        }`}
                       >
-                        <p style={{ fontSize: "0.8rem", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{course.title}</p>
-                        <p style={{ fontSize: "0.7rem", color: "#334155", marginTop: "2px" }}>{course.code}</p>
+                        <p className="truncate text-[0.8rem] font-medium">{course.title}</p>
+                        <p className="mt-0.5 text-xs text-ink-muted">{course.code}</p>
                       </button>
                     ))
                   )}
@@ -248,51 +178,27 @@ export default function Sidebar({ logout, onSelectCourse, selectedCourseId, acti
               )}
             </div>
 
-            {/* Other Nav Items */}
-            {navItems.map((item) => (
-              <button
-                key={item}
-                onClick={() => { setActiveNav(item); onSelectCourse(""); closeOnMobile() }}
-                style={{
-                  width: "100%",
-                  background: activeNav === item ? "rgba(139,92,246,0.15)" : "transparent",
-                  border: activeNav === item ? "1px solid rgba(139,92,246,0.3)" : "1px solid transparent",
-                  borderRadius: "14px",
-                  padding: "12px 14px",
-                  textAlign: "left",
-                  color: activeNav === item ? "#A78BFA" : "#64748B",
-                  fontSize: "0.875rem",
-                  fontWeight: 500,
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "10px",
-                  transition: "all 0.2s",
-                }}
-              >
-                <span>{navIcons[item]}</span> {item}
-              </button>
-            ))}
+            {navItems.map((item) => {
+              const Icon = navIcons[item]
+              return (
+                <button
+                  key={item}
+                  onClick={() => { setActiveNav(item); onSelectCourse(""); closeOnMobile() }}
+                  aria-current={activeNav === item ? "page" : undefined}
+                  className={`${itemBase} ${activeNav === item ? itemActive : itemIdle}`}
+                >
+                  <Icon size={18} aria-hidden="true" /> {item}
+                </button>
+              )
+            })}
           </nav>
         </div>
 
         <button
           onClick={() => { logout(); closeOnMobile() }}
-          style={{
-            width: "100%",
-            background: "rgba(239,68,68,0.1)",
-            border: "1px solid rgba(239,68,68,0.2)",
-            borderRadius: "14px",
-            padding: "12px",
-            color: "#F87171",
-            fontWeight: 600,
-            fontSize: "0.875rem",
-            cursor: "pointer",
-            transition: "all 0.2s",
-            marginTop: "24px",
-          }}
+          className={`${itemBase} ${itemIdle} mt-6`}
         >
-          Logout
+          <LogOut size={18} aria-hidden="true" /> Log out
         </button>
       </aside>
     </>

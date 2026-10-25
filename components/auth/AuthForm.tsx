@@ -163,7 +163,7 @@ export default function AuthForm() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full rounded-lg bg-accent px-4 py-3 font-medium text-white transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60"
+                className="w-full rounded-lg bg-accent px-4 py-3 font-medium text-on-accent transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {loading ? "Please wait..." : "Sign in"}
               </button>

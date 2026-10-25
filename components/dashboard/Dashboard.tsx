@@ -1,6 +1,7 @@
 "use client"
 import AITest from "../ai/AITest"
 import { useEffect, useState } from "react"
+import { BookOpen, ClipboardList, Flame, Search, Trash2, TrendingUp, X } from "lucide-react"
 import { supabase } from "../../lib/supabase"
 import Sidebar from "../layout/Sidebar"
 import AddCourseModal from "./AddCourseModal"
@@ -144,79 +145,51 @@ export default function Dashboard({ email, logout }: Props) {
     a.title.toLowerCase().includes(query)
   )
 
-  const bg = isDark ? "#080810" : "#F0F2FF"
-  const cardBg = isDark ? "#0D0D1A" : "#FFFFFF"
-  const cardBorder = isDark ? "rgba(255,255,255,0.06)" : "#F1F5F9"
-  const textPrimary = isDark ? "#FFFFFF" : "#0F172A"
-  const textSecondary = isDark ? "#64748B" : "#94A3B8"
-  const inputBg = isDark ? "#0D0D1A" : "#FFFFFF"
-  const inputBorder = isDark ? "rgba(255,255,255,0.08)" : "#E2E8F0"
-
   if (loading) {
     return (
-      <main style={{ minHeight: "100vh", background: bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div className="w-10 h-10 rounded-full border-4 border-purple-500 border-t-transparent animate-spin" />
+      <main className={`${isDark ? "dark" : ""} flex min-h-screen items-center justify-center bg-paper`}>
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
       </main>
     )
   }
 
+  const stats = [
+    { label: "Courses", value: courses.length, Icon: BookOpen },
+    { label: "Assignments", value: assignments.length, Icon: ClipboardList },
+    { label: "Productivity", value: `${productivity}%`, Icon: TrendingUp },
+    { label: "Study streak", value: studyStreak, Icon: Flame },
+  ]
+
+  const panel = "rounded-xl border border-line bg-surface"
+  const smallButton =
+    "rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:bg-paper"
+
   return (
-    <main style={{ minHeight: "100vh", background: bg, display: "flex" }}>
+    <main className={`${isDark ? "dark" : ""} flex min-h-screen bg-paper text-ink`}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;900&family=Space+Grotesk:wght@700;900&display=swap');
-        @keyframes spin { to { transform: rotate(360deg); } }
+        /* Space Grotesk is still used by screens that have not been restyled yet. */
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700;900&display=swap');
         @keyframes toastIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .toast { animation: toastIn 0.2s ease; }
-        * { font-family: 'DM Sans', sans-serif; box-sizing: border-box; }
-        .card-hover { transition: all 0.2s ease; }
-        .card-hover:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(139,92,246,0.12) !important; border-color: rgba(139,92,246,0.2) !important; }
-        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 99px; }
-
-        /* Responsive layout */
-        .dashboard-section { padding: 44px 48px; width: 100%; }
-        .dashboard-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
-        .dashboard-title { font-size: 3.5rem; }
-        .header-actions { display: flex; align-items: center; gap: 12px; }
-        .search-wrap { position: relative; }
-        .search-input { width: 280px; }
-        .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-top: 40px; }
-        .main-grid { display: grid; grid-template-columns: 1fr 340px; gap: 24px; margin-top: 28px; }
-
-        @media (max-width: 1024px) {
-          .main-grid { grid-template-columns: 1fr; }
-        }
-
-        @media (max-width: 768px) {
-          /* extra top padding clears the fixed mobile hamburger button from Sidebar */
-          .dashboard-section { padding: 88px 20px 32px; }
-          .dashboard-title { font-size: 2.1rem; }
-          .stat-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; margin-top: 24px; }
-          .main-grid { gap: 16px; margin-top: 20px; }
-          .header-actions { width: 100%; }
-          .search-wrap { flex: 1; }
-          .search-input { width: 100%; }
-        }
-
-        @media (max-width: 460px) {
-          .stat-grid { grid-template-columns: 1fr; }
-        }
+        ::-webkit-scrollbar-thumb { background: var(--line); border-radius: 99px; }
       `}</style>
 
       {toast && (
         <div
-          className={`toast fixed bottom-6 right-6 z-[100] flex items-center gap-3 px-5 py-3 rounded-2xl shadow-lg text-sm font-medium text-white ${
-            toast.type === "error" ? "bg-red-500" : "bg-emerald-500"
+          role="status"
+          className={`toast fixed bottom-6 right-6 z-[100] flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-on-accent ${
+            toast.type === "error" ? "bg-danger" : "bg-accent"
           }`}
         >
           <span>{toast.message}</span>
           <button
             onClick={() => setToast(null)}
-            className="text-white/80 hover:text-white text-base leading-none"
+            className="text-on-accent/80 hover:text-on-accent"
             aria-label="Dismiss notification"
           >
-            ×
+            <X size={16} />
           </button>
         </div>
       )}
@@ -252,50 +225,36 @@ export default function Dashboard({ email, logout }: Props) {
       ) : activeNav === "Solver" ? (
         <QuestionSolver />
       ) : (
-        <section className="dashboard-section" style={{ flex: 1, overflowY: "auto", background: bg }}>
+        // pt-[88px] on mobile clears the fixed menu button from the Sidebar
+        <section className="w-full flex-1 overflow-y-auto bg-paper px-5 pb-8 pt-[88px] md:px-12 md:py-11">
 
           {/* Header */}
-          <div className="dashboard-header">
-            <div>
-              <p style={{ color: textSecondary, fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600 }}>Welcome back</p>
-              <h1 className="dashboard-title" style={{
-                fontFamily: "'Space Grotesk', sans-serif",
-                fontWeight: 900,
-                color: textPrimary, marginTop: "6px", lineHeight: 1.1,
-              }}>Hey there 👋</h1>
-            </div>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <h1 className="text-3xl font-semibold tracking-tight text-ink">Dashboard</h1>
 
-            <div className="header-actions">
-              <div className="search-wrap">
-                <svg style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)", color: "#94A3B8", width: 18, height: 18 }}
-                  xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
-                </svg>
+            <div className="flex w-full items-center gap-3 md:w-auto">
+              <div className="relative flex-1 md:flex-none">
+                <Search
+                  size={18}
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-muted"
+                />
                 <input
                   type="text"
-                  placeholder="Search courses & tasks..."
+                  aria-label="Search courses and tasks"
+                  placeholder="Search courses and tasks"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="search-input"
-                  style={{
-                    background: inputBg,
-                    border: `1.5px solid ${inputBorder}`,
-                    borderRadius: "16px",
-                    paddingLeft: "48px",
-                    paddingRight: searchQuery ? "48px" : "20px",
-                    paddingTop: "13px",
-                    paddingBottom: "13px",
-                    fontSize: "0.875rem",
-                    color: textPrimary,
-                    outline: "none",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-                  }}
+                  className="w-full rounded-lg border border-line bg-surface py-2.5 pl-10 pr-10 text-sm text-ink placeholder:text-ink-muted focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 md:w-[280px]"
                 />
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery("")}
-                    style={{ position: "absolute", right: "16px", top: "50%", transform: "translateY(-50%)", color: "#94A3B8", fontSize: "1.2rem", background: "none", border: "none", cursor: "pointer" }}
-                  >×</button>
+                    aria-label="Clear search"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink"
+                  >
+                    <X size={16} />
+                  </button>
                 )}
               </div>
 
@@ -308,116 +267,127 @@ export default function Dashboard({ email, logout }: Props) {
             </div>
           </div>
 
-          {/* Stat Cards */}
-          <div className="stat-grid">
-            {[
-              { label: "Courses", value: courses.length, icon: "📚", bg: "linear-gradient(135deg, #F97316, #EC4899)", shadow: "rgba(249,115,22,0.25)" },
-              { label: "Assignments", value: assignments.length, icon: "📝", bg: "linear-gradient(135deg, #06B6D4, #3B82F6)", shadow: "rgba(6,182,212,0.25)" },
-              { label: "Productivity", value: `${productivity}%`, icon: "⚡", bg: "linear-gradient(135deg, #8B5CF6, #6D28D9)", shadow: "rgba(139,92,246,0.25)" },
-              { label: "Study Streak", value: studyStreak, icon: "🔥", bg: "linear-gradient(135deg, #10B981, #059669)", shadow: "rgba(16,185,129,0.25)" },
-            ].map((card) => (
-              <div key={card.label} style={{
-                background: card.bg,
-                borderRadius: "24px",
-                padding: "24px 28px",
-                boxShadow: `0 8px 32px ${card.shadow}`,
-              }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
-                  <p style={{ color: "rgba(255,255,255,0.8)", fontSize: "0.78rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>{card.label}</p>
-                  <span style={{ fontSize: "1.4rem" }}>{card.icon}</span>
+          {/* Stats */}
+          <div className="mt-8 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-line bg-line lg:grid-cols-4">
+            {stats.map(({ label, value, Icon }) => (
+              <div key={label} className="bg-surface p-5">
+                <div className="flex items-center justify-between text-ink-muted">
+                  <p className="text-sm">{label}</p>
+                  <Icon size={18} aria-hidden="true" />
                 </div>
-                <h2 style={{
-                  fontFamily: "'Space Grotesk', sans-serif",
-                  fontSize: "2.75rem", fontWeight: 900,
-                  color: "#FFFFFF", lineHeight: 1,
-                }}>{card.value}</h2>
+                <p className="mt-3 text-3xl font-semibold tabular-nums text-ink">{value}</p>
               </div>
             ))}
           </div>
 
           {/* Main Grid */}
-          <div className="main-grid">
+          <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_340px]">
 
             {/* Courses Panel */}
-            <div style={{ background: cardBg, border: `1.5px solid ${cardBorder}`, borderRadius: "28px", padding: "32px", boxShadow: "0 4px 24px rgba(0,0,0,0.04)" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
-                <div>
-                  <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: "1.4rem", fontWeight: 700, color: textPrimary }}>Current Courses</h2>
-                  <p style={{ color: textSecondary, fontSize: "0.82rem", marginTop: "4px" }}>Your semester modules</p>
-                </div>
+            <div className={`${panel} p-6`}>
+              <div className="mb-5 flex items-center justify-between gap-4">
+                <h2 className="text-lg font-semibold text-ink">Courses</h2>
                 <AddCourseModal userId={userId} refreshCourses={fetchCourses} />
               </div>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <div className="divide-y divide-line">
                 {filteredCourses.length > 0 ? filteredCourses.map((course) => (
-                  <div key={course.id} className="card-hover" onClick={() => setSelectedCourseId(course.id)}
-                    style={{ border: `1.5px solid ${cardBorder}`, borderRadius: "20px", padding: "20px 24px", cursor: "pointer", background: isDark ? "#111128" : "#FAFBFF", boxShadow: "0 2px 8px rgba(0,0,0,0.03)" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                      <div>
-                        <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: "1.05rem", fontWeight: 700, color: textPrimary }}>{course.title}</h3>
-                        <span style={{ display: "inline-block", marginTop: "6px", background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.15)", color: "#7C3AED", borderRadius: "8px", padding: "2px 10px", fontSize: "0.72rem", fontWeight: 600 }}>{course.code}</span>
+                  <div
+                    key={course.id}
+                    onClick={() => setSelectedCourseId(course.id)}
+                    className="-mx-3 cursor-pointer rounded-lg px-3 py-4 transition-colors hover:bg-paper"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setSelectedCourseId(course.id) }}
+                          className="block max-w-full truncate text-left font-medium text-ink hover:text-accent-strong"
+                        >
+                          {course.title}
+                        </button>
+                        <p className="mt-0.5 text-sm text-ink-muted">{course.code}</p>
                       </div>
-                      <button onClick={(e) => { e.stopPropagation(); deleteCourse(course.id) }}
-                        style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.15)", color: "#EF4444", borderRadius: "10px", padding: "6px 14px", fontSize: "0.78rem", fontWeight: 600, cursor: "pointer" }}>Delete</button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); deleteCourse(course.id) }}
+                        aria-label={`Delete ${course.title}`}
+                        className="rounded-lg p-2 text-ink-muted transition-colors hover:bg-danger-tint hover:text-danger"
+                      >
+                        <Trash2 size={16} />
+                      </button>
                     </div>
-                    <div style={{ marginTop: "16px" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-                        <span style={{ color: textSecondary, fontSize: "0.75rem" }}>Progress</span>
-                        <span style={{ color: textPrimary, fontSize: "0.75rem", fontWeight: 700 }}>{course.progress}%</span>
+
+                    <div className="mt-3 flex items-center gap-3">
+                      <div
+                        role="progressbar"
+                        aria-valuenow={course.progress}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-label={`${course.title} progress`}
+                        className="h-1.5 flex-1 overflow-hidden rounded-full bg-line"
+                      >
+                        <div
+                          className="h-full rounded-full bg-accent transition-[width] duration-300"
+                          style={{ width: `${course.progress}%` }}
+                        />
                       </div>
-                      <div style={{ width: "100%", height: "7px", background: isDark ? "#1E293B" : "#F1F5F9", borderRadius: "99px", overflow: "hidden" }}>
-                        <div style={{ height: "100%", width: `${course.progress}%`, background: "linear-gradient(90deg, #8B5CF6, #3B82F6)", borderRadius: "99px", transition: "width 0.3s ease" }} />
-                      </div>
-                      <button onClick={(e) => { e.stopPropagation(); increaseProgress(course.id, course.progress) }}
-                        style={{ marginTop: "14px", background: "linear-gradient(135deg, #8B5CF6, #3B82F6)", border: "none", color: "white", borderRadius: "12px", padding: "8px 18px", fontSize: "0.8rem", fontWeight: 600, cursor: "pointer", boxShadow: "0 4px 12px rgba(139,92,246,0.3)" }}>+ Increase Progress</button>
+                      <span className="w-10 text-right text-sm tabular-nums text-ink-muted">{course.progress}%</span>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); increaseProgress(course.id, course.progress) }}
+                        className={smallButton}
+                      >
+                        Add 10%
+                      </button>
                     </div>
                   </div>
                 )) : (
-                  <p style={{ color: isDark ? "#334155" : "#CBD5E1", textAlign: "center", padding: "40px 0", fontSize: "0.875rem" }}>No courses match your search.</p>
+                  <p className="py-10 text-center text-sm text-ink-muted">
+                    {courses.length === 0
+                      ? "No courses yet. Add one to start studying."
+                      : "No courses match your search."}
+                  </p>
                 )}
               </div>
             </div>
 
-            {/* Right Column */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-              <div style={{ background: cardBg, border: `1.5px solid ${cardBorder}`, borderRadius: "28px", padding: "28px", boxShadow: "0 4px 24px rgba(0,0,0,0.04)" }}>
-                <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: "1.2rem", fontWeight: 700, color: textPrimary, marginBottom: "16px" }}>Upcoming Tasks</h2>
-                <AddAssignmentModal userId={userId} refreshAssignments={fetchAssignments} />
-                <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "16px" }}>
-                  {filteredAssignments.length > 0 ? filteredAssignments.map((assignment) => (
-                    <div key={assignment.id} style={{ border: `1.5px solid ${cardBorder}`, borderRadius: "16px", padding: "14px 16px", background: isDark ? "#111128" : "#FAFBFF" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <div>
-                          <p style={{ fontWeight: 600, fontSize: "0.875rem", color: assignment.completed ? "#CBD5E1" : textPrimary, textDecoration: assignment.completed ? "line-through" : "none" }}>{assignment.title}</p>
-                          <p style={{ fontSize: "0.75rem", color: textSecondary, marginTop: "4px" }}>Due {assignment.due_date}</p>
-                        </div>
-                        <div style={{ display: "flex", gap: "8px" }}>
-                          <button onClick={() => toggleAssignment(assignment.id, assignment.completed)}
-                            style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)", color: "#10B981", borderRadius: "10px", padding: "6px 12px", fontSize: "0.75rem", fontWeight: 600, cursor: "pointer" }}
-                          >{assignment.completed ? "Undo" : "Done"}</button>
-                          <button onClick={() => deleteAssignment(assignment.id)}
-                            style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.15)", color: "#EF4444", borderRadius: "10px", padding: "6px 10px", fontSize: "0.75rem", fontWeight: 600, cursor: "pointer" }}>✕</button>
-                        </div>
-                      </div>
+            {/* Tasks */}
+            <div className={`${panel} h-fit p-6`}>
+              <h2 className="mb-4 text-lg font-semibold text-ink">Upcoming tasks</h2>
+              <AddAssignmentModal userId={userId} refreshAssignments={fetchAssignments} />
+              <div className="mt-4 divide-y divide-line">
+                {filteredAssignments.length > 0 ? filteredAssignments.map((assignment) => (
+                  <div key={assignment.id} className="flex items-center justify-between gap-3 py-3">
+                    <div className="min-w-0">
+                      <p className={`truncate text-sm font-medium ${assignment.completed ? "text-ink-muted line-through" : "text-ink"}`}>
+                        {assignment.title}
+                      </p>
+                      <p className="mt-0.5 text-xs text-ink-muted">Due {assignment.due_date}</p>
                     </div>
-                  )) : (
-                    <p style={{ color: isDark ? "#334155" : "#CBD5E1", textAlign: "center", padding: "20px 0", fontSize: "0.875rem" }}>No tasks match your search.</p>
-                  )}
-                </div>
-              </div>
-
-              <div style={{ background: "linear-gradient(135deg, #7C3AED, #2563EB)", borderRadius: "28px", padding: "28px", position: "relative", overflow: "hidden", boxShadow: "0 8px 32px rgba(124,58,237,0.3)" }}>
-                <div style={{ position: "absolute", top: "-30px", right: "-30px", width: "120px", height: "120px", background: "rgba(255,255,255,0.07)", borderRadius: "50%" }} />
-                <div style={{ position: "absolute", bottom: "-20px", left: "10px", width: "70px", height: "70px", background: "rgba(255,255,255,0.05)", borderRadius: "50%" }} />
-                <p style={{ color: "rgba(255,255,255,0.65)", fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700 }}>Daily Motivation</p>
-                <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: "1.15rem", fontWeight: 700, color: "#FFFFFF", marginTop: "10px", lineHeight: 1.5, position: "relative" }}>
-                  Small progress every day compounds into massive results.
-                </h2>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      <button
+                        onClick={() => toggleAssignment(assignment.id, assignment.completed)}
+                        className={smallButton}
+                      >
+                        {assignment.completed ? "Undo" : "Done"}
+                      </button>
+                      <button
+                        onClick={() => deleteAssignment(assignment.id)}
+                        aria-label={`Delete ${assignment.title}`}
+                        className="rounded-lg p-2 text-ink-muted transition-colors hover:bg-danger-tint hover:text-danger"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                )) : (
+                  <p className="py-6 text-center text-sm text-ink-muted">
+                    {assignments.length === 0 ? "No tasks yet." : "No tasks match your search."}
+                  </p>
+                )}
               </div>
             </div>
           </div>
 
-          <div style={{ marginTop: "24px" }}>
+          <div className="mt-6">
             <AITest />
           </div>
 

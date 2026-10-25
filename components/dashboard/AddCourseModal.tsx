@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { FileText } from "lucide-react"
 import { supabase } from "../../lib/supabase"
 
 type Props = {
@@ -14,11 +15,16 @@ export default function AddCourseModal({ userId, refreshCourses }: Props) {
   const [code, setCode] = useState("")
   const [file, setFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
+  const [error, setError] = useState("")
 
   async function addCourse() {
-    if (!title || !code) return
+    if (!title || !code) {
+      setError("Enter a course title and code.")
+      return
+    }
 
     setUploading(true)
+    setError("")
 
     let courseContent = ""
 
@@ -35,7 +41,7 @@ export default function AddCourseModal({ userId, refreshCourses }: Props) {
       courseContent = data.text || ""
     }
 
-    const { error } = await supabase.from("courses").insert([
+    const { error: insertError } = await supabase.from("courses").insert([
       {
         title,
         code,
@@ -45,8 +51,8 @@ export default function AddCourseModal({ userId, refreshCourses }: Props) {
       },
     ])
 
-    if (error) {
-      alert(error.message)
+    if (insertError) {
+      setError(insertError.message)
       setUploading(false)
       return
     }
@@ -59,68 +65,82 @@ export default function AddCourseModal({ userId, refreshCourses }: Props) {
     refreshCourses()
   }
 
+  const inputClass =
+    "w-full rounded-lg border border-line bg-surface px-3.5 py-3 text-ink placeholder:text-ink-muted/70 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+
   return (
     <>
       <button
         onClick={() => setOpen(true)}
-        className="bg-black text-white rounded-2xl px-5 py-3"
+        className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-on-accent transition-colors hover:bg-accent-strong"
       >
-        Add Course
+        Add course
       </button>
 
       {open && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white w-[420px] rounded-[32px] p-8">
-            <h2 className="text-3xl font-bold">New Course</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div role="dialog" aria-modal="true" aria-labelledby="new-course-title" className="w-full max-w-md rounded-2xl border border-line bg-surface p-6">
+            <h2 id="new-course-title" className="text-xl font-semibold text-ink">New course</h2>
 
-            <div className="space-y-5 mt-8">
-              <input
-                type="text"
-                placeholder="Course title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="w-full border border-black/10 rounded-2xl px-5 py-4 outline-none"
-              />
-
-              <input
-                type="text"
-                placeholder="Course code"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                className="w-full border border-black/10 rounded-2xl px-5 py-4 outline-none"
-              />
-
-              {/* File Upload */}
-              <div
-                onClick={() => document.getElementById("file-upload")?.click()}
-                className="w-full border-2 border-dashed border-black/10 rounded-2xl px-5 py-6 text-center cursor-pointer hover:border-purple-400 transition"
-              >
-                {file ? (
-                  <div>
-                    <p className="font-semibold text-purple-600">{file.name}</p>
-                    <p className="text-sm text-gray-400 mt-1">Click to change</p>
-                  </div>
-                ) : (
-                  <div>
-                    <p className="text-2xl mb-2">📄</p>
-                    <p className="font-semibold text-gray-600">Upload course document</p>
-                    <p className="text-sm text-gray-400 mt-1">PDF or Word (.docx)</p>
-                  </div>
-                )}
+            <div className="mt-6 space-y-4">
+              <div>
+                <label htmlFor="course-title" className="mb-1.5 block text-sm font-medium text-ink">Course title</label>
                 <input
-                  id="file-upload"
-                  type="file"
-                  accept=".pdf,.docx"
-                  className="hidden"
-                  onChange={(e) => setFile(e.target.files?.[0] || null)}
+                  id="course-title"
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className={inputClass}
                 />
               </div>
+
+              <div>
+                <label htmlFor="course-code" className="mb-1.5 block text-sm font-medium text-ink">Course code</label>
+                <input
+                  id="course-code"
+                  type="text"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  className={inputClass}
+                />
+              </div>
+
+              {/* File Upload */}
+              <button
+                type="button"
+                onClick={() => document.getElementById("file-upload")?.click()}
+                className="flex w-full flex-col items-center rounded-lg border border-dashed border-line px-4 py-5 text-center transition-colors hover:border-accent hover:bg-accent-tint"
+              >
+                <FileText size={22} aria-hidden="true" className="text-ink-muted" />
+                {file ? (
+                  <>
+                    <span className="mt-2 text-sm font-medium text-accent-strong">{file.name}</span>
+                    <span className="mt-0.5 text-xs text-ink-muted">Click to choose a different file</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="mt-2 text-sm font-medium text-ink">Upload course document</span>
+                    <span className="mt-0.5 text-xs text-ink-muted">PDF or Word (.docx)</span>
+                  </>
+                )}
+              </button>
+              <input
+                id="file-upload"
+                type="file"
+                accept=".pdf,.docx"
+                className="hidden"
+                onChange={(e) => setFile(e.target.files?.[0] || null)}
+              />
+
+              {error && (
+                <p role="alert" className="rounded-lg bg-danger-tint px-3.5 py-2.5 text-sm text-danger">{error}</p>
+              )}
             </div>
 
-            <div className="flex gap-4 mt-8">
+            <div className="mt-6 flex gap-3">
               <button
-                onClick={() => setOpen(false)}
-                className="flex-1 border border-black/10 rounded-2xl py-4"
+                onClick={() => { setOpen(false); setError("") }}
+                className="flex-1 rounded-lg border border-line bg-surface py-2.5 text-sm font-medium text-ink transition-colors hover:bg-paper"
               >
                 Cancel
               </button>
@@ -128,9 +148,9 @@ export default function AddCourseModal({ userId, refreshCourses }: Props) {
               <button
                 onClick={addCourse}
                 disabled={uploading}
-                className="flex-1 bg-black text-white rounded-2xl py-4"
+                className="flex-1 rounded-lg bg-accent py-2.5 text-sm font-medium text-on-accent transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {uploading ? "Creating..." : "Create"}
+                {uploading ? "Creating..." : "Create course"}
               </button>
             </div>
           </div>
