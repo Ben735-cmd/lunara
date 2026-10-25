@@ -2,7 +2,18 @@
 
 import { useState } from "react"
 import { supabase } from "../../lib/supabase"
+import { BookOpen, Calculator, CalendarDays, Layers, NotebookText, Sparkles } from "lucide-react"
 import CardPreview from "./CardPreview"
+import Logo from "../ui/Logo"
+
+const hubFeatures = [
+  { Icon: BookOpen, label: "Courses and documents" },
+  { Icon: Sparkles, label: "AI summaries and quizzes" },
+  { Icon: Layers, label: "Spaced-repetition flashcards" },
+  { Icon: NotebookText, label: "Notes" },
+  { Icon: CalendarDays, label: "Assignments and calendar" },
+  { Icon: Calculator, label: "Question solver" },
+]
 
 type Notice = { kind: "error" | "success"; text: string } | null
 
@@ -66,16 +77,24 @@ export default function AuthForm() {
     <main className="min-h-screen bg-paper lg:grid lg:grid-cols-2">
       {/* Left: what the app does, shown with a real flashcard */}
       <section className="hidden flex-col border-r border-line bg-accent-tint px-16 py-12 lg:flex xl:px-24">
-        <p className="text-lg font-semibold tracking-tight text-ink">Lunara</p>
+        <Logo size={40} />
         <div className="my-auto py-12">
           <h1 className="max-w-md text-4xl font-semibold leading-[1.15] tracking-tight text-ink">
-            Turn your course notes into things you remember.
+            Your whole semester, in one place.
           </h1>
           <p className="mt-5 max-w-md leading-relaxed text-ink-muted">
-            Upload a PDF or Word file. Lunara writes the summary, quiz and
-            flashcards, then schedules each card for when you are about to
-            forget it.
+            Keep your courses, notes, assignments and deadlines together.
+            Upload your materials and Lunara turns them into summaries,
+            quizzes and flashcards, with an AI assistant for when you get stuck.
           </p>
+          <ul className="mt-8 grid max-w-lg grid-cols-2 gap-x-4 gap-y-3">
+            {hubFeatures.map(({ Icon, label }) => (
+              <li key={label} className="flex items-center gap-2.5 text-sm text-ink">
+                <Icon size={18} aria-hidden="true" className="shrink-0 text-accent" />
+                {label}
+              </li>
+            ))}
+          </ul>
           <div className="mt-10">
             <CardPreview />
           </div>
@@ -85,7 +104,7 @@ export default function AuthForm() {
       {/* Right: sign in */}
       <section className="flex min-h-screen items-center justify-center px-6 py-12 lg:min-h-0">
         <div className="w-full max-w-sm">
-          <p className="mb-8 text-lg font-semibold tracking-tight text-ink lg:hidden">Lunara</p>
+          <Logo size={36} className="mb-8 lg:hidden" />
           <h2 className="text-2xl font-semibold tracking-tight text-ink">Sign in to Lunara</h2>
           <p className="mt-2 text-sm text-ink-muted">New to Lunara? Choose Create account.</p>
 

@@ -14,6 +14,7 @@ import {
   type LucideIcon,
 } from "lucide-react"
 import { supabase } from "../../lib/supabase"
+import Logo from "../ui/Logo"
 
 type Course = {
   id: string
@@ -127,7 +128,7 @@ export default function Sidebar({ logout, onSelectCourse, selectedCourseId, acti
         } ${isMobile && !mobileOpen ? "-translate-x-full" : ""}`}
       >
         <div>
-          <p className="mb-8 px-3 text-lg font-semibold tracking-tight text-ink">Lunara</p>
+          <Logo size={32} className="mb-8 px-3" />
 
           <nav className="flex flex-col gap-1" aria-label="Main">
             <button
