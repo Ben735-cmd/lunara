@@ -1,6 +1,13 @@
 import type { Metadata, Viewport } from "next"
 import Script from "next/script"
+import { Instrument_Sans } from "next/font/google"
 import "./globals.css"
+
+const instrumentSans = Instrument_Sans({
+  subsets: ["latin"],
+  variable: "--font-instrument",
+  display: "swap",
+})
 
 export const metadata: Metadata = {
   title: "Lunara - Student Dashboard",
@@ -14,7 +21,7 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: "#8B5CF6",
+  themeColor: "#0E7C5A",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -37,10 +44,10 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Lunara" />
         <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="msapplication-TileColor" content="#8B5CF6" />
+        <meta name="msapplication-TileColor" content="#0E7C5A" />
         <meta name="msapplication-TileImage" content="/icons/icon-144x144.png" />
       </head>
-      <body className="antialiased">
+      <body className={`${instrumentSans.variable} antialiased`}>
         <Script
           async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1275139836297308"

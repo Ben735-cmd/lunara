@@ -32,8 +32,8 @@ export default function Page() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-[#020617] flex items-center justify-center">
-        <div className="w-10 h-10 rounded-full border-4 border-purple-500 border-t-transparent animate-spin" />
+      <main className="min-h-screen bg-paper flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full border-2 border-accent border-t-transparent animate-spin" />
       </main>
     )
   }

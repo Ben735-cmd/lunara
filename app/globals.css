@@ -1,1 +1,55 @@
 @import "tailwindcss";
+
+/*
+  Lunara design tokens.
+  One accent (malachite green), neutral surfaces, and a single font family.
+  Use the Tailwind names below (bg-paper, text-ink, border-line, bg-accent...)
+  instead of hard-coded hex values in components.
+*/
+:root {
+  --paper: #f6f8f7;
+  --surface: #ffffff;
+  --ink: #1a2621;
+  --ink-muted: #5a6b63;
+  --line: #dce3df;
+  --accent: #0e7c5a;
+  --accent-strong: #0a6246;
+  --accent-tint: #e3f1eb;
+  --danger: #b3321f;
+  --danger-tint: #fbeae6;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-tint: var(--accent-tint);
+  --color-danger: var(--danger);
+  --color-danger-tint: var(--danger-tint);
+  --font-sans: var(--font-instrument), ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
