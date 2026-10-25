@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { supabase } from "../../lib/supabase"
+import { schedule, describeInterval, type Grade } from "../../lib/sm2"
 
 type Course = {
   id: string
@@ -25,8 +26,13 @@ type QuizQuestion = {
 }
 
 type Flashcard = {
+  id: string
   front: string
   back: string
+  ease: number
+  interval_days: number
+  repetitions: number
+  due_at: string
 }
 
 export default function CourseViewer({ courseId, onBack }: Props) {
@@ -50,6 +56,9 @@ export default function CourseViewer({ courseId, onBack }: Props) {
   const [flashcardsLoading, setFlashcardsLoading] = useState(false)
   const [flashcardsError, setFlashcardsError] = useState("")
   const [flippedCards, setFlippedCards] = useState<Record<number, boolean>>({})
+  const [flashcardView, setFlashcardView] = useState<"review" | "all">("review")
+  const [showAnswer, setShowAnswer] = useState(false)
+  const [nowTs, setNowTs] = useState(() => Date.now())
 
   const [explainText, setExplainText] = useState("")
   const [explanation, setExplanation] = useState("")
@@ -68,6 +77,36 @@ export default function CourseViewer({ courseId, onBack }: Props) {
     }
   }
 
+  async function fetchFlashcards() {
+    const { data, error } = await supabase
+      .from("flashcards")
+      .select("id, front, back, ease, interval_days, repetitions, due_at")
+      .eq("course_id", courseId)
+      .order("due_at", { ascending: true })
+    if (error) {
+      setFlashcardsError("Could not load your saved flashcards.")
+      return
+    }
+    setFlashcards((data ?? []) as Flashcard[])
+    setNowTs(new Date().getTime())
+  }
+
+  async function gradeCard(card: Flashcard, grade: Grade) {
+    const next = schedule(card, grade)
+    const update = {
+      ease: next.ease,
+      interval_days: next.interval_days,
+      repetitions: next.repetitions,
+      due_at: next.due_at.toISOString(),
+      last_reviewed_at: new Date().toISOString(),
+    }
+    setShowAnswer(false)
+    setNowTs(new Date().getTime())
+    setFlashcards(prev => prev.map(c => (c.id === card.id ? { ...c, ...update } : c)))
+    const { error } = await supabase.from("flashcards").update(update).eq("id", card.id)
+    if (error) setFlashcardsError("Could not save your review. Check your connection.")
+  }
+
   useEffect(() => {
     setCourse(null)
     setSummary("")
@@ -83,7 +122,9 @@ export default function CourseViewer({ courseId, onBack }: Props) {
     setExplainText("")
     setExplainError("")
     setActiveTab("content")
+    setShowAnswer(false)
     fetchCourse()
+    fetchFlashcards()
   }, [courseId])
 
   async function saveProgress(value: number) {
@@ -206,10 +247,32 @@ export default function CourseViewer({ courseId, onBack }: Props) {
         const match = cleaned.match(/\[[\s\S]*\]/)
         const parsed = JSON.parse(match ? match[0] : cleaned)
         if (!Array.isArray(parsed) || parsed.length === 0) throw new Error("Invalid flashcard format")
-        setFlashcards(parsed)
-      } catch {
-        setFlashcardsError("AI returned an unexpected format. Try generating again.")
-        setFlashcards([])
+        const cards = parsed.filter(
+          (c: { front?: unknown; back?: unknown }) =>
+            typeof c?.front === "string" && typeof c?.back === "string"
+        )
+        if (cards.length === 0) throw new Error("Invalid flashcard format")
+        const { data: { session } } = await supabase.auth.getSession()
+        const userId = session?.user?.id
+        if (!userId) throw new Error("You must be logged in to save flashcards.")
+        const { error } = await supabase.from("flashcards").insert(
+          cards.map((c: { front: string; back: string }) => ({
+            user_id: userId,
+            course_id: courseId,
+            front: c.front,
+            back: c.back,
+          }))
+        )
+        if (error) throw new Error(error.message)
+        await fetchFlashcards()
+        setFlashcardView("review")
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : ""
+        setFlashcardsError(
+          msg.startsWith("Invalid")
+            ? "AI returned an unexpected format. Try generating again."
+            : `Could not save flashcards: ${msg}`
+        )
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Unknown error"
@@ -596,12 +659,28 @@ export default function CourseViewer({ courseId, onBack }: Props) {
             )}
 
             {/* FLASHCARDS TAB */}
-            {activeTab === "flashcards" && (
+            {activeTab === "flashcards" && (() => {
+              const now = nowTs
+              const dueCards = flashcards
+                .filter(c => new Date(c.due_at).getTime() <= now)
+                .sort((a, b) => new Date(a.due_at).getTime() - new Date(b.due_at).getTime())
+              const current = dueCards[0]
+              const gradeButtons: { grade: Grade; label: string; color: string }[] = [
+                { grade: 0, label: "Again", color: "#EF4444" },
+                { grade: 1, label: "Hard", color: "#F59E0B" },
+                { grade: 2, label: "Good", color: "#10B981" },
+                { grade: 3, label: "Easy", color: "#3B82F6" },
+              ]
+              return (
               <div className="ai-content">
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
                   <div>
                     <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: "1.2rem", fontWeight: 700, color: "#0F172A" }}>🃏 Flashcards</h2>
-                    <p style={{ color: "#94A3B8", fontSize: "0.82rem", marginTop: "4px" }}>Click a card to flip it</p>
+                    <p style={{ color: "#94A3B8", fontSize: "0.82rem", marginTop: "4px" }}>
+                      {flashcards.length === 0
+                        ? "Generate a set to start studying"
+                        : `${dueCards.length} due now · ${flashcards.length} total`}
+                    </p>
                   </div>
                   <button
                     onClick={generateFlashcards}
@@ -615,8 +694,25 @@ export default function CourseViewer({ courseId, onBack }: Props) {
                       opacity: flashcardsLoading ? 0.7 : 1,
                       boxShadow: "0 4px 12px rgba(139,92,246,0.3)",
                     }}
-                  >{flashcardsLoading ? "Generating..." : flashcards.length ? "New Set" : "Generate Flashcards"}</button>
+                  >{flashcardsLoading ? "Generating..." : flashcards.length ? "Add More Cards" : "Generate Flashcards"}</button>
                 </div>
+
+                {flashcards.length > 0 && (
+                  <div style={{ display: "flex", gap: "8px", marginBottom: "20px" }}>
+                    {(["review", "all"] as const).map(v => (
+                      <button
+                        key={v}
+                        onClick={() => { setFlashcardView(v); setShowAnswer(false) }}
+                        style={{
+                          border: "1.5px solid rgba(139,92,246,0.3)", borderRadius: "12px",
+                          padding: "8px 16px", fontWeight: 600, fontSize: "0.82rem", cursor: "pointer",
+                          background: flashcardView === v ? "#8B5CF6" : "white",
+                          color: flashcardView === v ? "white" : "#6D28D9",
+                        }}
+                      >{v === "review" ? `Review (${dueCards.length})` : "All cards"}</button>
+                    ))}
+                  </div>
+                )}
 
                 {flashcardsLoading && (
                   <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "40px 0", justifyContent: "center" }}>
@@ -627,11 +723,65 @@ export default function CourseViewer({ courseId, onBack }: Props) {
 
                 {flashcardsError && !flashcardsLoading && <ErrorBanner message={flashcardsError} />}
 
-                {flashcards.length > 0 && !flashcardsLoading && (
+                {/* REVIEW MODE */}
+                {flashcards.length > 0 && !flashcardsLoading && flashcardView === "review" && (
+                  current ? (
+                    <div style={{ maxWidth: "560px", margin: "0 auto" }}>
+                      <div style={{
+                        minHeight: "220px", borderRadius: "20px", padding: "28px", textAlign: "center",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        background: showAnswer ? "linear-gradient(135deg, #8B5CF6, #3B82F6)" : "linear-gradient(135deg, rgba(139,92,246,0.08), rgba(59,130,246,0.08))",
+                        border: showAnswer ? "none" : "1.5px solid rgba(139,92,246,0.2)",
+                      }}>
+                        <div>
+                          <p style={{ fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "10px", color: showAnswer ? "rgba(255,255,255,0.7)" : "#A78BFA" }}>
+                            {showAnswer ? "ANSWER" : "TERM"}
+                          </p>
+                          <p style={{ fontWeight: 600, fontSize: "1rem", color: showAnswer ? "white" : "#0F172A" }}>
+                            {showAnswer ? current.back : current.front}
+                          </p>
+                        </div>
+                      </div>
+
+                      {!showAnswer ? (
+                        <button
+                          onClick={() => setShowAnswer(true)}
+                          style={{ width: "100%", marginTop: "16px", border: "none", borderRadius: "14px", padding: "14px", background: "#0F172A", color: "white", fontWeight: 700, cursor: "pointer" }}
+                        >Show answer</button>
+                      ) : (
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "10px", marginTop: "16px" }}>
+                          {gradeButtons.map(g => (
+                            <button
+                              key={g.grade}
+                              onClick={() => gradeCard(current, g.grade)}
+                              style={{ border: `1.5px solid ${g.color}`, borderRadius: "14px", padding: "10px 4px", background: "white", color: g.color, fontWeight: 700, fontSize: "0.82rem", cursor: "pointer" }}
+                            >
+                              {g.label}
+                              <span style={{ display: "block", fontSize: "0.68rem", fontWeight: 500, color: "#94A3B8", marginTop: "2px" }}>
+                                {describeInterval(schedule(current, g.grade))}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div style={{ textAlign: "center", padding: "60px 0" }}>
+                      <p style={{ fontSize: "2.5rem", marginBottom: "12px" }}>🎉</p>
+                      <p style={{ color: "#0F172A", fontWeight: 600 }}>You're done for now</p>
+                      <p style={{ color: "#94A3B8", fontSize: "0.85rem", marginTop: "4px" }}>
+                        No cards are due. Come back later, or add more cards.
+                      </p>
+                    </div>
+                  )
+                )}
+
+                {/* ALL CARDS */}
+                {flashcards.length > 0 && !flashcardsLoading && flashcardView === "all" && (
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "16px" }}>
                     {flashcards.map((card, i) => (
                       <div
-                        key={i}
+                        key={card.id}
                         className="flashcard"
                         onClick={() => setFlippedCards(prev => ({ ...prev, [i]: !prev[i] }))}
                         style={{ height: "160px" }}
@@ -662,7 +812,8 @@ export default function CourseViewer({ courseId, onBack }: Props) {
                   </div>
                 )}
               </div>
-            )}
+              )
+            })()}
 
             {/* EXPLAIN TAB */}
             {activeTab === "explain" && (
