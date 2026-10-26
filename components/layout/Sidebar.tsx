@@ -1,6 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Link from "next/link"
+import { SidebarCoursesSkeleton } from "../ui/Skeleton"
 import {
   BookOpen,
   Calculator,
@@ -42,17 +44,19 @@ const MOBILE_BREAKPOINT = 768
 export default function Sidebar({ logout, onSelectCourse, selectedCourseId, activeNav, setActiveNav }: SidebarProps) {
   const [courses, setCourses] = useState<Course[]>([])
   const [coursesOpen, setCoursesOpen] = useState(false)
+  const [coursesLoaded, setCoursesLoaded] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
 
   async function fetchCourses() {
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    if (!user) { setCoursesLoaded(true); return }
     const { data } = await supabase
       .from("courses")
       .select("id, title, code")
       .eq("user_id", user.id)
     setCourses(data || [])
+    setCoursesLoaded(true)
   }
 
   useEffect(() => {
@@ -158,7 +162,9 @@ export default function Sidebar({ logout, onSelectCourse, selectedCourseId, acti
 
               {coursesOpen && (
                 <div className="ml-4 mt-1 flex flex-col gap-0.5 border-l border-line pl-2">
-                  {courses.length === 0 ? (
+                  {!coursesLoaded ? (
+                    <SidebarCoursesSkeleton />
+                  ) : courses.length === 0 ? (
                     <p className="px-3 py-2 text-xs text-ink-muted">No courses yet</p>
                   ) : (
                     courses.map((course) => (
@@ -195,12 +201,18 @@ export default function Sidebar({ logout, onSelectCourse, selectedCourseId, acti
           </nav>
         </div>
 
-        <button
-          onClick={() => { logout(); closeOnMobile() }}
-          className={`${itemBase} ${itemIdle} mt-6`}
-        >
-          <LogOut size={18} aria-hidden="true" /> Log out
-        </button>
+        <div className="mt-6">
+          <button
+            onClick={() => { logout(); closeOnMobile() }}
+            className={`${itemBase} ${itemIdle}`}
+          >
+            <LogOut size={18} aria-hidden="true" /> Log out
+          </button>
+          <nav aria-label="About" className="mt-3 flex items-center gap-4 px-3 text-xs text-ink-muted">
+            <Link href="/about" className="hover:text-ink">About</Link>
+            <Link href="/privacy" className="hover:text-ink">Privacy</Link>
+          </nav>
+        </div>
       </aside>
     </>
   )

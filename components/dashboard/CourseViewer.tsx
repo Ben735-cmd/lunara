@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { CourseSkeleton, GeneratingSkeleton } from "../ui/Skeleton"
 import { AlertTriangle, ArrowLeft, Brain, Check, FileText, Layers, Lightbulb, Sparkles, X } from "lucide-react"
 import { supabase } from "../../lib/supabase"
 import { schedule, describeInterval, type Grade } from "../../lib/sm2"
@@ -324,11 +325,7 @@ export default function CourseViewer({ courseId, onBack }: Props) {
   const shell = "w-full flex-1 overflow-y-auto bg-paper px-5 pb-8 pt-[88px] md:px-12 md:py-11"
 
   if (!course) {
-    return (
-      <section className={`${shell} flex items-center justify-center`} role="status" aria-label="Loading course">
-        <Spinner className="h-9 w-9" />
-      </section>
-    )
+    return <CourseSkeleton />
   }
 
   return (
@@ -446,7 +443,7 @@ export default function CourseViewer({ courseId, onBack }: Props) {
                   </button>
                 </TabHeader>
 
-                {summaryLoading && <LoadingRow text="AI is reading your course..." />}
+                {summaryLoading && <GeneratingSkeleton text="AI is reading your course..." rows={5} />}
 
                 {summaryError && !summaryLoading && <ErrorBanner message={summaryError} />}
 
@@ -473,7 +470,7 @@ export default function CourseViewer({ courseId, onBack }: Props) {
                   </button>
                 </TabHeader>
 
-                {quizLoading && <LoadingRow text="Generating quiz questions..." />}
+                {quizLoading && <GeneratingSkeleton text="Generating quiz questions..." rows={6} />}
 
                 {quizError && !quizLoading && <ErrorBanner message={quizError} />}
 
@@ -592,7 +589,7 @@ export default function CourseViewer({ courseId, onBack }: Props) {
                   </div>
                 )}
 
-                {flashcardsLoading && <LoadingRow text="Creating flashcards..." />}
+                {flashcardsLoading && <GeneratingSkeleton text="Creating flashcards..." rows={4} />}
 
                 {flashcardsError && !flashcardsLoading && <ErrorBanner message={flashcardsError} />}
 
@@ -706,7 +703,7 @@ export default function CourseViewer({ courseId, onBack }: Props) {
                   {explainLoading ? "Explaining..." : "Explain this"}
                 </button>
 
-                {explainLoading && <LoadingRow text="AI is thinking..." />}
+                {explainLoading && <GeneratingSkeleton text="AI is thinking..." rows={4} />}
 
                 {explainError && !explainLoading && <ErrorBanner message={explainError} />}
 
@@ -771,19 +768,6 @@ export default function CourseViewer({ courseId, onBack }: Props) {
         </div>
       </div>
     </section>
-  )
-}
-
-function Spinner({ className = "h-6 w-6" }: { className?: string }) {
-  return <span aria-hidden="true" className={`inline-block animate-spin rounded-full border-2 border-accent border-t-transparent ${className}`} />
-}
-
-function LoadingRow({ text }: { text: string }) {
-  return (
-    <div role="status" className="flex items-center justify-center gap-3 py-10 text-sm text-ink-muted">
-      <Spinner />
-      <p>{text}</p>
-    </div>
   )
 }
 

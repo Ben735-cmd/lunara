@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { supabase } from "../../lib/supabase"
 import { BookOpen, Calculator, CalendarDays, Layers, NotebookText, Sparkles } from "lucide-react"
 import CardPreview from "./CardPreview"
@@ -196,6 +197,13 @@ export default function AuthForm() {
               </button>
             </div>
           </form>
+
+          <p className="mt-8 text-center text-xs leading-relaxed text-ink-muted">
+            By continuing you agree to how Lunara handles your data in the{" "}
+            <Link href="/privacy" className="font-medium text-accent-strong underline">privacy policy</Link>.
+            {" "}Made by{" "}
+            <Link href="/about" className="font-medium text-accent-strong underline">Ben Lubona</Link>.
+          </p>
         </div>
       </section>
     </main>

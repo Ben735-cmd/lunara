@@ -1,7 +1,9 @@
 "use client"
 
 import { useState } from "react"
-import { AlertTriangle, FileText, Image as ImageIcon, Upload } from "lucide-react"
+import { AlertTriangle, Camera, FileText, Image as ImageIcon, Upload } from "lucide-react"
+import CameraCapture from "./CameraCapture"
+import { SolutionSkeleton } from "../ui/Skeleton"
 
 export default function QuestionSolver() {
   const [file, setFile] = useState<File | null>(null)
@@ -11,6 +13,7 @@ export default function QuestionSolver() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [showExtracted, setShowExtracted] = useState(false)
+  const [cameraOpen, setCameraOpen] = useState(false)
 
   function handleFileChange(f: File) {
     setFile(f)
@@ -84,7 +87,7 @@ export default function QuestionSolver() {
       <div>
         <h1 className="text-3xl font-semibold tracking-tight text-ink">Question solver</h1>
         <p className="mt-2 text-sm text-ink-muted">
-          Upload a PDF, Word document, or a photo of your question and get a full solution.
+          Upload a PDF, Word document, or a photo, or point your camera at a question, and get a full solution.
         </p>
       </div>
 
@@ -92,9 +95,27 @@ export default function QuestionSolver() {
         {/* Upload panel */}
         <div className="flex flex-col gap-6">
           <div className={panel}>
-            <h2 className="mb-4 text-lg font-semibold text-ink">Upload question</h2>
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h2 className="text-lg font-semibold text-ink">Add question</h2>
+              {!cameraOpen && (
+                <button
+                  onClick={() => setCameraOpen(true)}
+                  className="flex items-center gap-2 rounded-lg border border-line px-3 py-1.5 text-sm font-medium text-ink transition-colors hover:bg-paper"
+                >
+                  <Camera size={16} aria-hidden="true" /> Use camera
+                </button>
+              )}
+            </div>
+
+            {cameraOpen && (
+              <CameraCapture
+                onClose={() => setCameraOpen(false)}
+                onCapture={(f) => { handleFileChange(f); setCameraOpen(false) }}
+              />
+            )}
 
             {/* Drop zone */}
+            {!cameraOpen && (
             <div
               role="button"
               tabIndex={0}
@@ -139,6 +160,7 @@ export default function QuestionSolver() {
                 onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileChange(f) }}
               />
             </div>
+            )}
 
             {/* Image preview */}
             {preview && (
@@ -173,7 +195,7 @@ export default function QuestionSolver() {
             <h2 className="mb-3 text-sm font-semibold text-ink">Tips for best results</h2>
             <ul className="space-y-2 text-sm text-ink-muted">
               {[
-                "Make sure the image is clear and well lit.",
+                "Hold the camera steady and make sure the question is well lit.",
                 "Crop the image to show just the question.",
                 "For PDF or Word files, include all parts of the question.",
                 "Works with math, science, essays and more.",
@@ -199,11 +221,7 @@ export default function QuestionSolver() {
           )}
 
           {loading && (
-            <div role="status" className="flex flex-col items-center justify-center gap-3 py-20">
-              <div className="h-9 w-9 animate-spin rounded-full border-2 border-accent border-t-transparent" />
-              <p className="text-sm font-medium text-ink">Solving your question...</p>
-              <p className="text-xs text-ink-muted">This may take a few seconds.</p>
-            </div>
+            <SolutionSkeleton />
           )}
 
           {solution && !loading && (
@@ -232,7 +250,7 @@ export default function QuestionSolver() {
 
           {!solution && !loading && !error && (
             <div className="flex flex-col items-center justify-center py-20 text-center">
-              <p className="font-medium text-ink">Upload a question to get started</p>
+              <p className="font-medium text-ink">Upload or capture a question to get started</p>
               <p className="mt-1.5 text-sm text-ink-muted">Supports math, science, essays and more.</p>
             </div>
           )}

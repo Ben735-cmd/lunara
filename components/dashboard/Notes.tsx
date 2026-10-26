@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { Plus, Trash2 } from "lucide-react"
 import { supabase } from "../../lib/supabase"
+import { NotesSkeleton } from "../ui/Skeleton"
 
 type Note = {
   id: string
@@ -14,6 +15,7 @@ type Note = {
 export default function Notes() {
   const [notes, setNotes] = useState<Note[]>([])
   const [userId, setUserId] = useState("")
+  const [loaded, setLoaded] = useState(false)
   const [title, setTitle] = useState("")
   const [content, setContent] = useState("")
   const [adding, setAdding] = useState(false)
@@ -22,7 +24,7 @@ export default function Notes() {
 
   async function fetchNotes() {
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    if (!user) { setLoaded(true); return }
     setUserId(user.id)
     const { data } = await supabase
       .from("notes")
@@ -30,6 +32,7 @@ export default function Notes() {
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
     setNotes(data || [])
+    setLoaded(true)
   }
 
   useEffect(() => { fetchNotes() }, [])
@@ -53,6 +56,8 @@ export default function Notes() {
 
   const inputClass =
     "w-full rounded-lg border border-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-muted/70 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+
+  if (!loaded) return <NotesSkeleton />
 
   return (
     <section className="w-full flex-1 overflow-y-auto bg-paper px-5 pb-8 pt-[88px] md:px-12 md:py-11">

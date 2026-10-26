@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { supabase } from "../lib/supabase"
 import AuthForm from "../components/auth/AuthForm"
 import Dashboard from "../components/dashboard/Dashboard"
+import { AppSkeleton } from "../components/ui/Skeleton"
 
 export default function Page() {
   const [email, setEmail] = useState<string | null>(null)
@@ -31,11 +32,7 @@ export default function Page() {
   }
 
   if (loading) {
-    return (
-      <main className="min-h-screen bg-paper flex items-center justify-center">
-        <div className="w-8 h-8 rounded-full border-2 border-accent border-t-transparent animate-spin" />
-      </main>
-    )
+    return <AppSkeleton />
   }
 
   if (!email) {

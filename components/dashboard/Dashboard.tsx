@@ -12,6 +12,7 @@ import Calendar from "./Calendar"
 import QuestionSolver from "./QuestionSolver"
 import Assignments from "./Assignments"
 import ProfileCenter from "./ProfileCenter"
+import { DashboardLoading } from "../ui/Skeleton"
 
 type Props = {
   email: string
@@ -146,11 +147,7 @@ export default function Dashboard({ email, logout }: Props) {
   )
 
   if (loading) {
-    return (
-      <main className={`${isDark ? "dark" : ""} flex min-h-screen items-center justify-center bg-paper`}>
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
-      </main>
-    )
+    return <DashboardLoading dark={isDark} />
   }
 
   const stats = [

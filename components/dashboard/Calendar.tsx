@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { CalendarDays, ChevronLeft, ChevronRight, Plus, Trash2 } from "lucide-react"
 import { supabase } from "../../lib/supabase"
+import { CalendarSkeleton } from "../ui/Skeleton"
 
 type Assignment = {
   id: string
@@ -26,6 +27,7 @@ export default function Calendar() {
   const [assignments, setAssignments] = useState<Assignment[]>([])
   const [sessions, setSessions] = useState<StudySession[]>([])
   const [userId, setUserId] = useState("")
+  const [loaded, setLoaded] = useState(false)
   const [today] = useState(new Date())
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth())
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear())
@@ -39,7 +41,7 @@ export default function Calendar() {
 
   async function fetchData() {
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    if (!user) { setLoaded(true); return }
     setUserId(user.id)
 
     const { data: aData } = await supabase.from("assignments").select("*").eq("user_id", user.id)
@@ -47,6 +49,7 @@ export default function Calendar() {
 
     const { data: sData } = await supabase.from("study_sessions").select("*").eq("user_id", user.id)
     setSessions(sData || [])
+    setLoaded(true)
   }
 
   useEffect(() => { fetchData() }, [])
@@ -96,6 +99,8 @@ export default function Calendar() {
     "rounded-lg border border-line p-2 text-ink-muted transition-colors hover:bg-paper hover:text-ink"
 
   const pendingAssignments = assignments.filter(a => !a.completed)
+
+  if (!loaded) return <CalendarSkeleton />
 
   return (
     <section className="w-full flex-1 overflow-y-auto bg-paper px-5 pb-8 pt-[88px] md:px-12 md:py-11">

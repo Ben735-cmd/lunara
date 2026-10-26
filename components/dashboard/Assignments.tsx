@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { AlertTriangle, CalendarCheck, Check, ClipboardList, Plus, Search, Trash2 } from "lucide-react"
 import { supabase } from "../../lib/supabase"
+import { AssignmentsSkeleton } from "../ui/Skeleton"
 
 type Assignment = {
   id: string
@@ -14,6 +15,7 @@ type Assignment = {
 export default function Assignments() {
   const [assignments, setAssignments] = useState<Assignment[]>([])
   const [userId, setUserId] = useState("")
+  const [loaded, setLoaded] = useState(false)
   const [adding, setAdding] = useState(false)
   const [title, setTitle] = useState("")
   const [dueDate, setDueDate] = useState("")
@@ -23,7 +25,7 @@ export default function Assignments() {
 
   async function fetchAssignments() {
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    if (!user) { setLoaded(true); return }
     setUserId(user.id)
     const { data } = await supabase
       .from("assignments")
@@ -31,6 +33,7 @@ export default function Assignments() {
       .eq("user_id", user.id)
       .order("due_date", { ascending: true })
     setAssignments(data || [])
+    setLoaded(true)
   }
 
   useEffect(() => { fetchAssignments() }, [])
@@ -92,6 +95,8 @@ export default function Assignments() {
     { label: "Pending", value: pending.length, Icon: CalendarCheck },
     { label: "Completed", value: completed.length, Icon: Check },
   ]
+
+  if (!loaded) return <AssignmentsSkeleton />
 
   return (
     <section className="w-full flex-1 overflow-y-auto bg-paper px-5 pb-8 pt-[88px] md:px-12 md:py-11">
