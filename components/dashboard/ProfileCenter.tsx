@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import { Bell, Check, ChevronDown, Lock, Mail, Moon, Settings, Sun, User } from "lucide-react"
 import { supabase } from "../../lib/supabase"
 
 type Profile = {
@@ -22,9 +23,43 @@ type Props = {
   onStreakUpdate: (streak: number) => void
 }
 
+type Tab = "profile" | "settings" | "notifications"
+
+function Avatar({ url, initials, size }: { url: string; initials: string; size: string }) {
+  return (
+    <span className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-accent text-sm font-semibold text-on-accent ${size}`}>
+      {url ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={url} alt="" className="h-full w-full object-cover" />
+      ) : (
+        initials
+      )}
+    </span>
+  )
+}
+
+function Switch({ checked, onChange, label, disabled }: { checked: boolean; onChange?: () => void; label: string; disabled?: boolean }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      disabled={disabled}
+      onClick={onChange}
+      className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:cursor-default ${checked ? "bg-accent" : "bg-line"}`}
+    >
+      <span
+        aria-hidden="true"
+        className={`absolute top-0.5 h-5 w-5 rounded-full bg-surface shadow transition-[left] ${checked ? "left-[22px]" : "left-0.5"}`}
+      />
+    </button>
+  )
+}
+
 export default function ProfileCenter({ email, onThemeChange, isDark, onStreakUpdate }: Props) {
   const [open, setOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState<"profile" | "settings" | "notifications">("profile")
+  const [activeTab, setActiveTab] = useState<Tab>("profile")
   const [profile, setProfile] = useState<Profile | null>(null)
   const [fullName, setFullName] = useState("")
   const [university, setUniversity] = useState("")
@@ -182,201 +217,179 @@ export default function ProfileCenter({ email, onThemeChange, isDark, onStreakUp
     ? fullName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
     : email[0].toUpperCase()
 
-  const c = isDark ? {
-    bg: "#0D0D1A", border: "rgba(255,255,255,0.08)",
-    text: "#FFFFFF", subtext: "#64748B",
-    card: "#1A1A2E", cardBorder: "rgba(255,255,255,0.06)",
-    input: "#0D0D1A", inputBorder: "rgba(255,255,255,0.1)",
-    inputText: "#E2E8F0", tabInactive: "#334155",
-  } : {
-    bg: "#FFFFFF", border: "#E2E8F0",
-    text: "#0F172A", subtext: "#94A3B8",
-    card: "#F8FAFF", cardBorder: "#F1F5F9",
-    input: "#FFFFFF", inputBorder: "#E2E8F0",
-    inputText: "#0F172A", tabInactive: "#94A3B8",
-  }
+  // Every color below comes from the design tokens, so light and dark mode
+  // follow the "dark" class on the dashboard with no per-component palette.
+  const inputClass =
+    "w-full rounded-lg border border-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-muted/70 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+  const labelClass = "mb-1.5 block text-sm font-medium text-ink"
+  const card = "rounded-lg border border-line bg-paper p-4"
+  const primaryButton =
+    "w-full rounded-lg bg-accent py-2.5 text-sm font-medium text-on-accent transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60"
+
+  const tabs: { id: Tab; label: string; Icon: typeof User }[] = [
+    { id: "profile", label: "Profile", Icon: User },
+    { id: "settings", label: "Settings", Icon: Settings },
+    { id: "notifications", label: "Alerts", Icon: Bell },
+  ]
 
   return (
-    <div ref={dropdownRef} style={{ position: "relative" }}>
+    <div ref={dropdownRef} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        style={{
-          display: "flex", alignItems: "center", gap: "10px",
-          background: isDark ? "rgba(255,255,255,0.05)" : "white",
-          border: `1.5px solid ${isDark ? "rgba(255,255,255,0.08)" : "#E2E8F0"}`,
-          borderRadius: "16px", padding: "8px 14px",
-          cursor: "pointer", transition: "all 0.2s",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-        }}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        className="flex items-center gap-2.5 rounded-lg border border-line bg-surface py-1.5 pl-1.5 pr-3 transition-colors hover:bg-paper"
       >
-        <div style={{
-          width: "36px", height: "36px", borderRadius: "12px",
-          background: avatarUrl ? "transparent" : "linear-gradient(135deg, #8B5CF6, #3B82F6)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          overflow: "hidden", flexShrink: 0,
-        }}>
-          {avatarUrl ? (
-            <img src={avatarUrl} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-          ) : (
-            <span style={{ color: "white", fontWeight: 700, fontSize: "0.85rem" }}>{initials}</span>
-          )}
-        </div>
-        <div style={{ textAlign: "left" }}>
-          <p style={{ fontWeight: 700, fontSize: "0.85rem", color: isDark ? "#FFFFFF" : "#0F172A", lineHeight: 1.2 }}>
-            {fullName || "Your Name"}
-          </p>
-          <p style={{ fontSize: "0.72rem", color: "#94A3B8", lineHeight: 1.2 }}>
-            {university || "Set your university"}
-          </p>
-        </div>
-        <span style={{ color: "#94A3B8", fontSize: "0.7rem", marginLeft: "4px" }}>▾</span>
+        <Avatar url={avatarUrl} initials={initials} size="h-8 w-8" />
+        <span className="hidden text-left sm:block">
+          <span className="block text-sm font-medium leading-tight text-ink">{fullName || "Your name"}</span>
+          <span className="block text-xs leading-tight text-ink-muted">{university || "Set your university"}</span>
+        </span>
+        <ChevronDown size={16} aria-hidden="true" className="text-ink-muted" />
       </button>
 
       {open && (
-        <div style={{
-          position: "absolute", top: "calc(100% + 12px)", right: 0,
-          width: "360px", background: c.bg,
-          border: `1.5px solid ${c.border}`,
-          borderRadius: "24px", padding: "24px",
-          boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
-          zIndex: 1000,
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "20px", paddingBottom: "20px", borderBottom: `1px solid ${c.cardBorder}` }}>
-            <div
+        <div
+          role="dialog"
+          aria-label="Profile and settings"
+          className="absolute right-0 top-[calc(100%+8px)] z-[1000] w-[min(360px,calc(100vw-2.5rem))] rounded-xl border border-line bg-surface p-5 shadow-lg"
+        >
+          {/* Identity */}
+          <div className="mb-5 flex items-center gap-3.5 border-b border-line pb-5">
+            <button
+              type="button"
               onClick={() => document.getElementById("avatar-upload")?.click()}
-              style={{
-                width: "56px", height: "56px", borderRadius: "16px",
-                background: avatarUrl ? "transparent" : "linear-gradient(135deg, #8B5CF6, #3B82F6)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                overflow: "hidden", cursor: "pointer", flexShrink: 0,
-                border: "2px solid rgba(139,92,246,0.3)", position: "relative",
-              }}
+              aria-label="Upload a profile picture"
+              className="relative shrink-0 rounded-full"
             >
-              {avatarUrl ? (
-                <img src={avatarUrl} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-              ) : (
-                <span style={{ color: "white", fontWeight: 700, fontSize: "1.1rem" }}>{initials}</span>
-              )}
+              <Avatar url={avatarUrl} initials={initials} size="h-14 w-14 text-lg" />
               {uploading && (
-                <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <div style={{ width: "16px", height: "16px", borderRadius: "50%", border: "2px solid white", borderTopColor: "transparent", animation: "spin 0.8s linear infinite" }} />
-                </div>
+                <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50">
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                </span>
               )}
-              <input id="avatar-upload" type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadAvatar(f) }} />
-            </div>
-            <div style={{ flex: 1 }}>
-              <p style={{ fontWeight: 700, color: c.text, fontSize: "1rem" }}>{fullName || "Your Name"}</p>
-              <p style={{ color: "#94A3B8", fontSize: "0.78rem", marginTop: "2px" }}>{email}</p>
-              <p style={{ color: "#8B5CF6", fontSize: "0.75rem", marginTop: "2px", fontWeight: 600 }}>{university || "No university set"}</p>
+            </button>
+            <input
+              id="avatar-upload"
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadAvatar(f) }}
+            />
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-semibold text-ink">{fullName || "Your name"}</p>
+              <p className="truncate text-xs text-ink-muted">{email}</p>
+              <p className="truncate text-xs font-medium text-accent-strong">{university || "No university set"}</p>
             </div>
             <button
               onClick={toggleDarkMode}
-              style={{
-                background: isDark ? "rgba(139,92,246,0.2)" : "#F1F5F9",
-                border: isDark ? "1px solid rgba(139,92,246,0.3)" : "1px solid #E2E8F0",
-                borderRadius: "12px", padding: "8px 10px",
-                cursor: "pointer", fontSize: "1.1rem", transition: "all 0.2s",
-              }}
-            >{isDark ? "☀️" : "🌙"}</button>
+              aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+              className="rounded-lg border border-line p-2 text-ink-muted transition-colors hover:bg-paper hover:text-ink"
+            >
+              {isDark ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
           </div>
 
-          <div style={{ display: "flex", gap: "4px", background: c.card, borderRadius: "14px", padding: "4px", marginBottom: "20px", border: `1px solid ${c.cardBorder}` }}>
-            {([
-              { id: "profile", label: "Profile", icon: "👤" },
-              { id: "settings", label: "Settings", icon: "⚙️" },
-              { id: "notifications", label: "Alerts", icon: "🔔" },
-            ] as const).map((tab) => (
+          {/* Tabs */}
+          <div role="tablist" className="mb-5 flex gap-1 rounded-lg border border-line bg-paper p-1">
+            {tabs.map(({ id, label, Icon }) => (
               <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                style={{
-                  flex: 1, padding: "8px 4px", borderRadius: "10px", border: "none",
-                  background: activeTab === tab.id ? "linear-gradient(135deg, #8B5CF6, #3B82F6)" : "transparent",
-                  color: activeTab === tab.id ? "white" : c.tabInactive,
-                  fontWeight: 600, fontSize: "0.78rem", cursor: "pointer",
-                  display: "flex", alignItems: "center", justifyContent: "center", gap: "5px",
-                  transition: "all 0.2s",
-                }}
+                key={id}
+                role="tab"
+                aria-selected={activeTab === id}
+                onClick={() => setActiveTab(id)}
+                className={`flex flex-1 items-center justify-center gap-1.5 rounded-md py-1.5 text-sm font-medium transition-colors ${
+                  activeTab === id ? "bg-accent-tint text-accent-strong" : "text-ink-muted hover:text-ink"
+                }`}
               >
-                <span>{tab.icon}</span> {tab.label}
+                <Icon size={15} aria-hidden="true" /> {label}
               </button>
             ))}
           </div>
 
           {activeTab === "profile" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            <div className="space-y-4">
               <div>
-                <label style={{ fontSize: "0.75rem", fontWeight: 600, color: c.subtext, display: "block", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Full Name</label>
-                <input type="text" placeholder="e.g. Ben Smith" value={fullName} onChange={(e) => setFullName(e.target.value)}
-                  style={{ width: "100%", border: `1.5px solid ${c.inputBorder}`, borderRadius: "12px", padding: "10px 14px", fontSize: "0.875rem", outline: "none", background: c.input, color: c.inputText }} />
+                <label htmlFor="profile-name" className={labelClass}>Full name</label>
+                <input id="profile-name" type="text" placeholder="e.g. Ben Smith" value={fullName} onChange={(e) => setFullName(e.target.value)} className={inputClass} />
               </div>
               <div>
-                <label style={{ fontSize: "0.75rem", fontWeight: 600, color: c.subtext, display: "block", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.05em" }}>University</label>
-                <input type="text" placeholder="e.g. University of Cape Town" value={university} onChange={(e) => setUniversity(e.target.value)}
-                  style={{ width: "100%", border: `1.5px solid ${c.inputBorder}`, borderRadius: "12px", padding: "10px 14px", fontSize: "0.875rem", outline: "none", background: c.input, color: c.inputText }} />
+                <label htmlFor="profile-university" className={labelClass}>University</label>
+                <input id="profile-university" type="text" placeholder="e.g. University of Cape Town" value={university} onChange={(e) => setUniversity(e.target.value)} className={inputClass} />
               </div>
               <div>
-                <label style={{ fontSize: "0.75rem", fontWeight: 600, color: c.subtext, display: "block", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Profile Picture URL</label>
-                <p style={{ fontSize: "0.75rem", color: "#94A3B8", marginBottom: "6px" }}>Or click your avatar above to upload</p>
-                <input type="text" placeholder="https://..." value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)}
-                  style={{ width: "100%", border: `1.5px solid ${c.inputBorder}`, borderRadius: "12px", padding: "10px 14px", fontSize: "0.875rem", outline: "none", background: c.input, color: c.inputText }} />
+                <label htmlFor="profile-avatar" className={labelClass}>Profile picture URL</label>
+                <p className="mb-1.5 text-xs text-ink-muted">Or select your avatar above to upload one.</p>
+                <input id="profile-avatar" type="text" placeholder="https://..." value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} className={inputClass} />
               </div>
-              <button onClick={saveProfile} disabled={saving}
-                style={{ width: "100%", marginTop: "4px", background: saved ? "linear-gradient(135deg, #10B981, #059669)" : "linear-gradient(135deg, #8B5CF6, #3B82F6)", border: "none", borderRadius: "12px", padding: "12px", color: "white", fontWeight: 700, fontSize: "0.875rem", cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1, transition: "all 0.3s" }}
-              >{saving ? "Saving..." : saved ? "✓ Saved!" : "Save Profile"}</button>
+              <button onClick={saveProfile} disabled={saving} className={`${primaryButton} flex items-center justify-center gap-1.5`}>
+                {saving ? "Saving..." : saved ? <><Check size={16} aria-hidden="true" /> Saved</> : "Save profile"}
+              </button>
             </div>
           )}
 
           {activeTab === "settings" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              <div style={{ background: c.card, border: `1px solid ${c.cardBorder}`, borderRadius: "16px", padding: "16px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div>
-                    <p style={{ fontWeight: 600, color: c.text, fontSize: "0.875rem" }}>{isDark ? "🌙 Dark Mode" : "☀️ Light Mode"}</p>
-                    <p style={{ color: c.subtext, fontSize: "0.75rem", marginTop: "2px" }}>{isDark ? "Switch to light mode" : "Switch to dark mode"}</p>
-                  </div>
-                  <div onClick={toggleDarkMode} style={{ width: "48px", height: "26px", borderRadius: "99px", background: isDark ? "linear-gradient(135deg, #8B5CF6, #3B82F6)" : "#E2E8F0", cursor: "pointer", position: "relative", transition: "all 0.3s" }}>
-                    <div style={{ position: "absolute", top: "3px", left: isDark ? "25px" : "3px", width: "20px", height: "20px", borderRadius: "50%", background: "white", transition: "left 0.3s", boxShadow: "0 2px 4px rgba(0,0,0,0.2)" }} />
-                  </div>
+            <div className="space-y-3">
+              <div className={`${card} flex items-center justify-between gap-3`}>
+                <div>
+                  <p className="text-sm font-medium text-ink">{isDark ? "Dark mode" : "Light mode"}</p>
+                  <p className="mt-0.5 text-xs text-ink-muted">{isDark ? "Switch to light mode" : "Switch to dark mode"}</p>
                 </div>
+                <Switch checked={isDark} onChange={toggleDarkMode} label="Dark mode" />
               </div>
 
-              <div style={{ background: c.card, border: `1px solid ${c.cardBorder}`, borderRadius: "16px", padding: "16px" }}>
-                <p style={{ fontWeight: 600, color: c.text, fontSize: "0.875rem", marginBottom: "12px" }}>🔒 Change Password</p>
-                <input type="password" placeholder="New password (min 6 chars)" value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
-                  style={{ width: "100%", border: `1.5px solid ${c.inputBorder}`, borderRadius: "12px", padding: "10px 14px", fontSize: "0.875rem", outline: "none", background: c.input, color: c.inputText, marginBottom: "10px" }} />
-                <button onClick={changePassword} disabled={passwordSaving || newPassword.length < 6}
-                  style={{ width: "100%", background: passwordSaved ? "linear-gradient(135deg, #10B981, #059669)" : "linear-gradient(135deg, #8B5CF6, #3B82F6)", border: "none", borderRadius: "12px", padding: "10px", color: "white", fontWeight: 700, fontSize: "0.85rem", cursor: passwordSaving || newPassword.length < 6 ? "not-allowed" : "pointer", opacity: newPassword.length < 6 ? 0.5 : 1, transition: "all 0.3s" }}
-                >{passwordSaving ? "Updating..." : passwordSaved ? "✓ Updated!" : "Update Password"}</button>
+              <div className={card}>
+                <p className="mb-3 flex items-center gap-2 text-sm font-medium text-ink">
+                  <Lock size={15} aria-hidden="true" /> Change password
+                </p>
+                <label htmlFor="new-password" className="sr-only">New password</label>
+                <input
+                  id="new-password"
+                  type="password"
+                  placeholder="New password (min 6 characters)"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className={`${inputClass} mb-3`}
+                />
+                <button onClick={changePassword} disabled={passwordSaving || newPassword.length < 6} className={primaryButton}>
+                  {passwordSaving ? "Updating..." : passwordSaved ? "Password updated" : "Update password"}
+                </button>
               </div>
 
-              <div style={{ background: c.card, border: `1px solid ${c.cardBorder}`, borderRadius: "16px", padding: "16px" }}>
-                <p style={{ fontWeight: 600, color: c.text, fontSize: "0.875rem", marginBottom: "4px" }}>📧 Email Address</p>
-                <p style={{ color: "#94A3B8", fontSize: "0.82rem" }}>{email}</p>
+              <div className={card}>
+                <p className="mb-1 flex items-center gap-2 text-sm font-medium text-ink">
+                  <Mail size={15} aria-hidden="true" /> Email address
+                </p>
+                <p className="break-all text-sm text-ink-muted">{email}</p>
               </div>
             </div>
           )}
 
           {activeTab === "notifications" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            <div className="space-y-3">
               {[
-                { label: "Push Notifications", desc: "Get notified about due assignments", key: "main" },
-                { label: "Assignment Reminders", desc: "Remind me 1 day before due date", key: "assignments" },
-                { label: "Study Streak Alerts", desc: "Don't break your streak!", key: "streak" },
-                { label: "Weekly Summary", desc: "Weekly progress report", key: "weekly" },
-              ].map((item) => (
-                <div key={item.key} style={{ background: c.card, border: `1px solid ${c.cardBorder}`, borderRadius: "16px", padding: "14px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div>
-                    <p style={{ fontWeight: 600, color: c.text, fontSize: "0.85rem" }}>{item.label}</p>
-                    <p style={{ color: c.subtext, fontSize: "0.75rem", marginTop: "2px" }}>{item.desc}</p>
+                { label: "Push notifications", desc: "Get notified about due assignments", key: "main" },
+                { label: "Assignment reminders", desc: "Remind me 1 day before due date", key: "assignments" },
+                { label: "Study streak alerts", desc: "Don't break your streak", key: "streak" },
+                { label: "Weekly summary", desc: "Weekly progress report", key: "weekly" },
+              ].map((item) => {
+                const isMain = item.key === "main"
+                return (
+                  <div key={item.key} className={`${card} flex items-center justify-between gap-3`}>
+                    <div>
+                      <p className="text-sm font-medium text-ink">{item.label}</p>
+                      <p className="mt-0.5 text-xs text-ink-muted">{item.desc}</p>
+                    </div>
+                    <Switch
+                      checked={isMain ? notifications : true}
+                      onChange={isMain ? toggleNotifications : undefined}
+                      disabled={!isMain}
+                      label={item.label}
+                    />
                   </div>
-                  <div onClick={item.key === "main" ? toggleNotifications : undefined}
-                    style={{ width: "44px", height: "24px", borderRadius: "99px", background: (item.key === "main" ? notifications : true) ? "linear-gradient(135deg, #8B5CF6, #3B82F6)" : "#E2E8F0", cursor: item.key === "main" ? "pointer" : "default", position: "relative", transition: "all 0.3s", flexShrink: 0 }}>
-                    <div style={{ position: "absolute", top: "2px", left: (item.key === "main" ? notifications : true) ? "22px" : "2px", width: "20px", height: "20px", borderRadius: "50%", background: "white", transition: "left 0.3s", boxShadow: "0 2px 4px rgba(0,0,0,0.2)" }} />
-                  </div>
-                </div>
-              ))}
-              <p style={{ color: c.subtext, fontSize: "0.75rem", textAlign: "center", marginTop: "4px" }}>More notification settings coming soon</p>
+                )
+              })}
+              <p className="pt-1 text-center text-xs text-ink-muted">More notification settings coming soon</p>
             </div>
           )}
         </div>

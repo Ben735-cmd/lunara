@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { Plus, Trash2 } from "lucide-react"
 import { supabase } from "../../lib/supabase"
 
 type Note = {
@@ -50,170 +51,115 @@ export default function Notes() {
     fetchNotes()
   }
 
-  return (
-    <main style={{ flex: 1, background: "#F0F2FF", padding: "44px 48px", overflowY: "auto" }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700;900&display=swap');
-        .note-card { transition: all 0.2s ease; }
-        .note-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(139,92,246,0.1) !important; }
-      `}</style>
+  const inputClass =
+    "w-full rounded-lg border border-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-muted/70 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
 
+  return (
+    <section className="w-full flex-1 overflow-y-auto bg-paper px-5 pb-8 pt-[88px] md:px-12 md:py-11">
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px" }}>
-        <div>
-          <p style={{ color: "#94A3B8", fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600 }}>Your workspace</p>
-          <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: "2.5rem", fontWeight: 900, color: "#0F172A", marginTop: "4px" }}>Notes 📝</h1>
-        </div>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h1 className="text-3xl font-semibold tracking-tight text-ink">Notes</h1>
         <button
           onClick={() => setAdding(true)}
-          style={{
-            background: "linear-gradient(135deg, #8B5CF6, #3B82F6)",
-            border: "none", borderRadius: "16px",
-            padding: "12px 24px", color: "white",
-            fontWeight: 700, fontSize: "0.9rem", cursor: "pointer",
-            boxShadow: "0 4px 16px rgba(139,92,246,0.3)",
-          }}
-        >+ New Note</button>
+          className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-on-accent transition-colors hover:bg-accent-strong"
+        >
+          <Plus size={16} aria-hidden="true" /> New note
+        </button>
       </div>
 
-      {/* Add Note Form */}
+      {/* Add note form */}
       {adding && (
-        <div style={{
-          background: "white", borderRadius: "24px",
-          padding: "28px", marginBottom: "24px",
-          boxShadow: "0 8px 32px rgba(139,92,246,0.1)",
-          border: "1.5px solid rgba(139,92,246,0.2)",
-        }}>
-          <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, color: "#0F172A", marginBottom: "16px", fontSize: "1.1rem" }}>New Note</h3>
-          <input
-            type="text"
-            placeholder="Note title..."
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            style={{
-              width: "100%", border: "1.5px solid #E2E8F0",
-              borderRadius: "12px", padding: "12px 16px",
-              fontSize: "1rem", fontWeight: 700, color: "#0F172A",
-              outline: "none", marginBottom: "12px",
-              background: "#FAFBFF",
-            }}
-          />
-          {/* Divider between title and content */}
-          <div style={{ height: "1px", background: "#E2E8F0", marginBottom: "12px" }} />
-          <textarea
-            placeholder="Write your note here..."
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            rows={6}
-            style={{
-              width: "100%", border: "1.5px solid #E2E8F0",
-              borderRadius: "12px", padding: "12px 16px",
-              fontSize: "0.9rem", color: "#334155",
-              outline: "none", resize: "vertical",
-              fontFamily: "inherit", lineHeight: 1.7,
-              background: "#FAFBFF",
-            }}
-          />
-          <div style={{ display: "flex", gap: "12px", marginTop: "16px" }}>
+        <div className="mt-8 rounded-xl border border-line bg-surface p-6">
+          <h2 className="mb-4 text-lg font-semibold text-ink">New note</h2>
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="note-title" className="mb-1.5 block text-sm font-medium text-ink">Title</label>
+              <input
+                id="note-title"
+                type="text"
+                placeholder="Note title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label htmlFor="note-content" className="mb-1.5 block text-sm font-medium text-ink">Note</label>
+              <textarea
+                id="note-content"
+                placeholder="Write your note here"
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                rows={6}
+                className={`${inputClass} resize-y leading-relaxed`}
+              />
+            </div>
+          </div>
+          <div className="mt-5 flex gap-3">
             <button
               onClick={() => { setAdding(false); setTitle(""); setContent("") }}
-              style={{
-                flex: 1, background: "#F1F5F9", border: "none",
-                borderRadius: "12px", padding: "12px",
-                color: "#64748B", fontWeight: 600, cursor: "pointer",
-              }}
-            >Cancel</button>
+              className="flex-1 rounded-lg border border-line bg-surface py-2.5 text-sm font-medium text-ink transition-colors hover:bg-paper"
+            >
+              Cancel
+            </button>
             <button
               onClick={saveNote}
               disabled={saving}
-              style={{
-                flex: 2, background: "linear-gradient(135deg, #8B5CF6, #3B82F6)",
-                border: "none", borderRadius: "12px", padding: "12px",
-                color: "white", fontWeight: 700, cursor: "pointer",
-                opacity: saving ? 0.7 : 1,
-              }}
-            >{saving ? "Saving..." : "Save Note"}</button>
+              className="flex-1 rounded-lg bg-accent py-2.5 text-sm font-medium text-on-accent transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {saving ? "Saving..." : "Save note"}
+            </button>
           </div>
         </div>
       )}
 
-      {/* Notes Grid */}
+      {/* Notes grid */}
       {notes.length === 0 && !adding ? (
-        <div style={{ textAlign: "center", padding: "80px 0" }}>
-          <p style={{ fontSize: "3rem", marginBottom: "16px" }}>📝</p>
-          <p style={{ color: "#94A3B8", fontWeight: 500 }}>No notes yet</p>
-          <p style={{ color: "#CBD5E1", fontSize: "0.85rem", marginTop: "8px" }}>Click "New Note" to get started</p>
+        <div className="mt-8 rounded-xl border border-line bg-surface px-6 py-14 text-center">
+          <p className="font-medium text-ink">No notes yet</p>
+          <p className="mt-1.5 text-sm text-ink-muted">Choose New note to get started.</p>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "16px" }}>
-          {notes.map((note) => (
-            <div
-              key={note.id}
-              className="note-card"
-              onClick={() => setSelectedNote(selectedNote?.id === note.id ? null : note)}
-              style={{
-                background: "white", borderRadius: "20px",
-                overflow: "hidden", cursor: "pointer",
-                border: selectedNote?.id === note.id
-                  ? "1.5px solid rgba(139,92,246,0.4)"
-                  : "1.5px solid #F1F5F9",
-                boxShadow: selectedNote?.id === note.id
-                  ? "0 8px 32px rgba(139,92,246,0.12)"
-                  : "0 2px 8px rgba(0,0,0,0.04)",
-                transition: "all 0.2s",
-              }}
-            >
-              {/* Title bar — clearly separated */}
-              <div style={{
-                padding: "18px 20px",
-                background: selectedNote?.id === note.id
-                  ? "linear-gradient(135deg, rgba(139,92,246,0.08), rgba(59,130,246,0.06))"
-                  : "#FAFBFF",
-                borderBottom: "1.5px solid #F1F5F9",
-                display: "flex", justifyContent: "space-between", alignItems: "center",
-              }}>
-                <h3 style={{
-                  fontFamily: "'Space Grotesk', sans-serif",
-                  fontSize: "0.95rem", fontWeight: 700, color: "#0F172A",
-                  flex: 1, marginRight: "12px",
-                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                }}>{note.title}</h3>
-                <button
-                  onClick={(e) => { e.stopPropagation(); deleteNote(note.id) }}
-                  style={{
-                    background: "rgba(239,68,68,0.08)",
-                    border: "1px solid rgba(239,68,68,0.15)",
-                    color: "#EF4444", borderRadius: "8px",
-                    padding: "4px 10px", fontSize: "0.72rem",
-                    fontWeight: 600, cursor: "pointer", flexShrink: 0,
-                  }}
-                >✕</button>
-              </div>
+        <div className="mt-8 grid gap-4 sm:grid-cols-[repeat(auto-fill,minmax(280px,1fr))]">
+          {notes.map((note) => {
+            const selected = selectedNote?.id === note.id
+            return (
+              <div
+                key={note.id}
+                className={`overflow-hidden rounded-xl border bg-surface transition-colors ${
+                  selected ? "border-accent" : "border-line hover:border-accent/50"
+                }`}
+              >
+                <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-3.5">
+                  <button
+                    onClick={() => setSelectedNote(selected ? null : note)}
+                    aria-expanded={selected}
+                    className="min-w-0 flex-1 truncate text-left font-medium text-ink hover:text-accent-strong"
+                  >
+                    {note.title}
+                  </button>
+                  <button
+                    onClick={() => deleteNote(note.id)}
+                    aria-label={`Delete ${note.title}`}
+                    className="shrink-0 rounded-lg p-2 text-ink-muted transition-colors hover:bg-danger-tint hover:text-danger"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
 
-              {/* Content area */}
-              <div style={{ padding: "16px 20px" }}>
-                <p style={{
-                  color: "#64748B", fontSize: "0.85rem",
-                  lineHeight: 1.7,
-                  display: "-webkit-box",
-                  WebkitLineClamp: selectedNote?.id === note.id ? "unset" : 4,
-                  WebkitBoxOrient: "vertical" as const,
-                  overflow: selectedNote?.id === note.id ? "visible" : "hidden",
-                  whiteSpace: "pre-wrap",
-                }}>{note.content}</p>
-
-                <p style={{
-                  color: "#CBD5E1", fontSize: "0.72rem",
-                  marginTop: "12px", paddingTop: "12px",
-                  borderTop: "1px solid #F1F5F9",
-                }}>
-                  {new Date(note.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                </p>
+                <div className="px-5 py-4">
+                  <p className={`whitespace-pre-wrap text-sm leading-relaxed text-ink-muted ${selected ? "" : "line-clamp-4"}`}>
+                    {note.content}
+                  </p>
+                  <p className="mt-3 border-t border-line pt-3 text-xs text-ink-muted">
+                    {new Date(note.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                  </p>
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
-    </main>
+    </section>
   )
 }

@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { CalendarDays, ChevronLeft, ChevronRight, Plus, Trash2 } from "lucide-react"
 import { supabase } from "../../lib/supabase"
 
 type Assignment = {
@@ -88,107 +89,126 @@ export default function Calendar() {
     daySessions: sessions.filter(s => s.date === selectedDay),
   } : null
 
-  return (
-    <main style={{ flex: 1, background: "#F0F2FF", padding: "44px 48px", overflowY: "auto" }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700;900&display=swap');`}</style>
+  const panel = "rounded-xl border border-line bg-surface p-6"
+  const inputClass =
+    "w-full rounded-lg border border-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-muted/70 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+  const navButton =
+    "rounded-lg border border-line p-2 text-ink-muted transition-colors hover:bg-paper hover:text-ink"
 
+  const pendingAssignments = assignments.filter(a => !a.completed)
+
+  return (
+    <section className="w-full flex-1 overflow-y-auto bg-paper px-5 pb-8 pt-[88px] md:px-12 md:py-11">
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px" }}>
-        <div>
-          <p style={{ color: "#94A3B8", fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600 }}>Your schedule</p>
-          <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: "2.5rem", fontWeight: 900, color: "#0F172A", marginTop: "4px" }}>Calendar 📅</h1>
-        </div>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h1 className="text-3xl font-semibold tracking-tight text-ink">Calendar</h1>
         <button
           onClick={() => setAdding(true)}
-          style={{
-            background: "linear-gradient(135deg, #8B5CF6, #3B82F6)",
-            border: "none", borderRadius: "16px",
-            padding: "12px 24px", color: "white",
-            fontWeight: 700, fontSize: "0.9rem", cursor: "pointer",
-            boxShadow: "0 4px 16px rgba(139,92,246,0.3)",
-          }}
-        >+ Study Session</button>
+          className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-on-accent transition-colors hover:bg-accent-strong"
+        >
+          <Plus size={16} aria-hidden="true" /> Study session
+        </button>
       </div>
 
-      {/* Add Session Form */}
+      {/* Add session form */}
       {adding && (
-        <div style={{
-          background: "white", borderRadius: "24px",
-          padding: "28px", marginBottom: "24px",
-          boxShadow: "0 8px 32px rgba(139,92,246,0.1)",
-          border: "1.5px solid rgba(139,92,246,0.2)",
-        }}>
-          <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, color: "#0F172A", marginBottom: "16px" }}>New Study Session</h3>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-            <input
-              placeholder="Session title (e.g. Math revision)"
-              value={sessionTitle}
-              onChange={(e) => setSessionTitle(e.target.value)}
-              style={{ gridColumn: "1 / -1", border: "1.5px solid #E2E8F0", borderRadius: "12px", padding: "12px 16px", fontSize: "0.9rem", outline: "none", color: "#0F172A" }}
-            />
-            <input
-              type="date"
-              value={sessionDate}
-              onChange={(e) => setSessionDate(e.target.value)}
-              style={{ border: "1.5px solid #E2E8F0", borderRadius: "12px", padding: "12px 16px", fontSize: "0.9rem", outline: "none", color: "#0F172A" }}
-            />
-            <div style={{ display: "flex", gap: "8px" }}>
+        <div className={`${panel} mt-8`}>
+          <h2 className="mb-4 text-lg font-semibold text-ink">New study session</h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <label htmlFor="session-title" className="mb-1.5 block text-sm font-medium text-ink">Title</label>
               <input
-                type="time"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                style={{ flex: 1, border: "1.5px solid #E2E8F0", borderRadius: "12px", padding: "12px 16px", fontSize: "0.9rem", outline: "none", color: "#0F172A" }}
-              />
-              <input
-                type="time"
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
-                style={{ flex: 1, border: "1.5px solid #E2E8F0", borderRadius: "12px", padding: "12px 16px", fontSize: "0.9rem", outline: "none", color: "#0F172A" }}
+                id="session-title"
+                placeholder="e.g. Math revision"
+                value={sessionTitle}
+                onChange={(e) => setSessionTitle(e.target.value)}
+                className={inputClass}
               />
             </div>
+            <div>
+              <label htmlFor="session-date" className="mb-1.5 block text-sm font-medium text-ink">Date</label>
+              <input
+                id="session-date"
+                type="date"
+                value={sessionDate}
+                onChange={(e) => setSessionDate(e.target.value)}
+                className={inputClass}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="session-start" className="mb-1.5 block text-sm font-medium text-ink">Start</label>
+                <input
+                  id="session-start"
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label htmlFor="session-end" className="mb-1.5 block text-sm font-medium text-ink">End</label>
+                <input
+                  id="session-end"
+                  type="time"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                  className={inputClass}
+                />
+              </div>
+            </div>
           </div>
-          <div style={{ display: "flex", gap: "12px", marginTop: "16px" }}>
+          <div className="mt-5 flex gap-3">
             <button
               onClick={() => setAdding(false)}
-              style={{ flex: 1, background: "#F1F5F9", border: "none", borderRadius: "12px", padding: "12px", color: "#64748B", fontWeight: 600, cursor: "pointer" }}
-            >Cancel</button>
+              className="flex-1 rounded-lg border border-line bg-surface py-2.5 text-sm font-medium text-ink transition-colors hover:bg-paper"
+            >
+              Cancel
+            </button>
             <button
               onClick={saveSession}
               disabled={saving}
-              style={{ flex: 2, background: "linear-gradient(135deg, #8B5CF6, #3B82F6)", border: "none", borderRadius: "12px", padding: "12px", color: "white", fontWeight: 700, cursor: "pointer", opacity: saving ? 0.7 : 1 }}
-            >{saving ? "Saving..." : "Save Session"}</button>
+              className="flex-1 rounded-lg bg-accent py-2.5 text-sm font-medium text-on-accent transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {saving ? "Saving..." : "Save session"}
+            </button>
           </div>
         </div>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: "24px" }}>
-
-        {/* Calendar Grid */}
-        <div style={{ background: "white", borderRadius: "28px", padding: "28px", boxShadow: "0 4px 24px rgba(0,0,0,0.04)", border: "1.5px solid #F1F5F9" }}>
-          {/* Month Nav */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+      <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_320px]">
+        {/* Calendar grid */}
+        <div className={panel}>
+          {/* Month nav */}
+          <div className="mb-5 flex items-center justify-between">
             <button
               onClick={() => { if (currentMonth === 0) { setCurrentMonth(11); setCurrentYear(y => y - 1) } else setCurrentMonth(m => m - 1) }}
-              style={{ background: "#F1F5F9", border: "none", borderRadius: "10px", padding: "8px 14px", cursor: "pointer", color: "#64748B", fontWeight: 600 }}
-            >‹</button>
-            <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, color: "#0F172A", fontSize: "1.1rem" }}>
+              aria-label="Previous month"
+              className={navButton}
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <h2 className="text-lg font-semibold text-ink">
               {MONTHS[currentMonth]} {currentYear}
             </h2>
             <button
               onClick={() => { if (currentMonth === 11) { setCurrentMonth(0); setCurrentYear(y => y + 1) } else setCurrentMonth(m => m + 1) }}
-              style={{ background: "#F1F5F9", border: "none", borderRadius: "10px", padding: "8px 14px", cursor: "pointer", color: "#64748B", fontWeight: 600 }}
-            >›</button>
+              aria-label="Next month"
+              className={navButton}
+            >
+              <ChevronRight size={18} />
+            </button>
           </div>
 
-          {/* Day Headers */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "4px", marginBottom: "8px" }}>
+          {/* Day headers */}
+          <div className="mb-2 grid grid-cols-7 gap-1">
             {DAYS.map(d => (
-              <div key={d} style={{ textAlign: "center", fontSize: "0.72rem", fontWeight: 700, color: "#94A3B8", padding: "4px 0", textTransform: "uppercase" }}>{d}</div>
+              <div key={d} className="py-1 text-center text-xs font-medium uppercase text-ink-muted">{d}</div>
             ))}
           </div>
 
-          {/* Calendar Days */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "4px" }}>
+          {/* Calendar days */}
+          <div className="grid grid-cols-7 gap-1">
             {calendarDays.map((day, i) => {
               if (!day) return <div key={i} />
               const dateStr = formatDate(currentYear, currentMonth, day)
@@ -198,118 +218,114 @@ export default function Calendar() {
               const hasEvents = dayAssignments.length > 0 || daySessions.length > 0
 
               return (
-                <div
+                <button
                   key={i}
                   onClick={() => setSelectedDay(isSelected ? null : dateStr)}
-                  style={{
-                    aspectRatio: "1",
-                    borderRadius: "12px",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    cursor: "pointer",
-                    position: "relative",
-                    background: isSelected
-                      ? "linear-gradient(135deg, #8B5CF6, #3B82F6)"
+                  aria-pressed={isSelected}
+                  aria-label={`${MONTHS[currentMonth]} ${day}${isToday ? ", today" : ""}${hasEvents ? ", has events" : ""}`}
+                  className={`flex aspect-square flex-col items-center justify-center rounded-lg border text-sm transition-colors ${
+                    isSelected
+                      ? "border-accent bg-accent text-on-accent"
                       : isToday
-                      ? "rgba(139,92,246,0.1)"
-                      : "transparent",
-                    border: isToday && !isSelected ? "1.5px solid rgba(139,92,246,0.3)" : "1.5px solid transparent",
-                    transition: "all 0.15s",
-                  }}
+                      ? "border-accent bg-accent-tint font-semibold text-accent-strong"
+                      : "border-transparent text-ink hover:bg-paper"
+                  }`}
                 >
-                  <span style={{
-                    fontSize: "0.85rem", fontWeight: isToday ? 700 : 500,
-                    color: isSelected ? "white" : isToday ? "#7C3AED" : "#334155",
-                  }}>{day}</span>
+                  <span>{day}</span>
                   {hasEvents && (
-                    <div style={{ display: "flex", gap: "3px", marginTop: "3px" }}>
-                      {dayAssignments.length > 0 && <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: isSelected ? "white" : "#F97316" }} />}
-                      {daySessions.length > 0 && <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: isSelected ? "white" : "#8B5CF6" }} />}
-                    </div>
+                    <span className="mt-0.5 flex gap-0.5" aria-hidden="true">
+                      {dayAssignments.length > 0 && <span className={`h-1.5 w-1.5 rounded-full ${isSelected ? "bg-on-accent" : "bg-ink-muted"}`} />}
+                      {daySessions.length > 0 && <span className={`h-1.5 w-1.5 rounded-full ${isSelected ? "bg-on-accent" : "bg-accent"}`} />}
+                    </span>
                   )}
-                </div>
+                </button>
               )
             })}
           </div>
 
           {/* Legend */}
-          <div style={{ display: "flex", gap: "20px", marginTop: "20px", paddingTop: "16px", borderTop: "1px solid #F1F5F9" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#F97316" }} />
-              <span style={{ fontSize: "0.75rem", color: "#94A3B8" }}>Assignment due</span>
+          <div className="mt-5 flex gap-5 border-t border-line pt-4 text-xs text-ink-muted">
+            <div className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-ink-muted" aria-hidden="true" />
+              Assignment due
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#8B5CF6" }} />
-              <span style={{ fontSize: "0.75rem", color: "#94A3B8" }}>Study session</span>
+            <div className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-accent" aria-hidden="true" />
+              Study session
             </div>
           </div>
         </div>
 
-        {/* Events Panel */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        {/* Events panel */}
+        <div className="flex flex-col gap-6">
           {selectedDay ? (
-            <div style={{ background: "white", borderRadius: "24px", padding: "24px", boxShadow: "0 4px 24px rgba(0,0,0,0.04)", border: "1.5px solid #F1F5F9" }}>
-              <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, color: "#0F172A", marginBottom: "16px" }}>
+            <div className={panel}>
+              <h2 className="mb-4 text-lg font-semibold text-ink">
                 {new Date(selectedDay + "T00:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
-              </h3>
+              </h2>
 
               {selectedEvents?.dayAssignments.length === 0 && selectedEvents?.daySessions.length === 0 && (
-                <p style={{ color: "#CBD5E1", fontSize: "0.85rem", textAlign: "center", padding: "20px 0" }}>Nothing scheduled</p>
+                <p className="py-4 text-center text-sm text-ink-muted">Nothing scheduled</p>
               )}
 
-              {selectedEvents?.dayAssignments.map(a => (
-                <div key={a.id} style={{ background: "rgba(249,115,22,0.06)", border: "1px solid rgba(249,115,22,0.15)", borderRadius: "14px", padding: "14px 16px", marginBottom: "10px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#F97316", flexShrink: 0 }} />
-                    <p style={{ fontWeight: 600, fontSize: "0.875rem", color: "#0F172A", textDecoration: a.completed ? "line-through" : "none" }}>{a.title}</p>
-                  </div>
-                  <p style={{ color: "#94A3B8", fontSize: "0.75rem", marginTop: "4px", marginLeft: "16px" }}>Assignment due</p>
-                </div>
-              ))}
-
-              {selectedEvents?.daySessions.map(s => (
-                <div key={s.id} style={{ background: "rgba(139,92,246,0.06)", border: "1px solid rgba(139,92,246,0.15)", borderRadius: "14px", padding: "14px 16px", marginBottom: "10px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                    <div>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                        <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#8B5CF6", flexShrink: 0 }} />
-                        <p style={{ fontWeight: 600, fontSize: "0.875rem", color: "#0F172A" }}>{s.title}</p>
-                      </div>
-                      <p style={{ color: "#94A3B8", fontSize: "0.75rem", marginTop: "4px", marginLeft: "16px" }}>{s.start_time} – {s.end_time}</p>
+              <div className="space-y-2.5">
+                {selectedEvents?.dayAssignments.map(a => (
+                  <div key={a.id} className="rounded-lg border border-line bg-paper px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <span className="h-2 w-2 shrink-0 rounded-full bg-ink-muted" aria-hidden="true" />
+                      <p className={`text-sm font-medium ${a.completed ? "text-ink-muted line-through" : "text-ink"}`}>{a.title}</p>
                     </div>
-                    <button
-                      onClick={() => deleteSession(s.id)}
-                      style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.15)", color: "#EF4444", borderRadius: "8px", padding: "4px 10px", fontSize: "0.72rem", fontWeight: 600, cursor: "pointer" }}
-                    >✕</button>
+                    <p className="ml-4 mt-0.5 text-xs text-ink-muted">Assignment due</p>
                   </div>
-                </div>
-              ))}
+                ))}
+
+                {selectedEvents?.daySessions.map(s => (
+                  <div key={s.id} className="rounded-lg border border-line bg-accent-tint px-4 py-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="h-2 w-2 shrink-0 rounded-full bg-accent" aria-hidden="true" />
+                          <p className="text-sm font-medium text-ink">{s.title}</p>
+                        </div>
+                        <p className="ml-4 mt-0.5 text-xs text-ink-muted">{s.start_time} – {s.end_time}</p>
+                      </div>
+                      <button
+                        onClick={() => deleteSession(s.id)}
+                        aria-label={`Delete ${s.title}`}
+                        className="shrink-0 rounded-lg p-1.5 text-ink-muted transition-colors hover:bg-danger-tint hover:text-danger"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           ) : (
-            <div style={{ background: "white", borderRadius: "24px", padding: "24px", boxShadow: "0 4px 24px rgba(0,0,0,0.04)", border: "1.5px solid #F1F5F9", textAlign: "center" }}>
-              <p style={{ fontSize: "2rem", marginBottom: "12px" }}>📅</p>
-              <p style={{ color: "#94A3B8", fontWeight: 500, fontSize: "0.9rem" }}>Click a day to see events</p>
+            <div className={`${panel} flex flex-col items-center text-center`}>
+              <CalendarDays size={24} aria-hidden="true" className="text-ink-muted" />
+              <p className="mt-2 text-sm text-ink-muted">Select a day to see its events</p>
             </div>
           )}
 
-          {/* Upcoming assignments */}
-          <div style={{ background: "white", borderRadius: "24px", padding: "24px", boxShadow: "0 4px 24px rgba(0,0,0,0.04)", border: "1.5px solid #F1F5F9" }}>
-            <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, color: "#0F172A", marginBottom: "16px", fontSize: "1rem" }}>Upcoming Deadlines</h3>
-            {assignments.filter(a => !a.completed).length === 0 ? (
-              <p style={{ color: "#CBD5E1", fontSize: "0.85rem", textAlign: "center", padding: "12px 0" }}>No pending assignments</p>
+          {/* Upcoming deadlines */}
+          <div className={panel}>
+            <h2 className="mb-3 text-lg font-semibold text-ink">Upcoming deadlines</h2>
+            {pendingAssignments.length === 0 ? (
+              <p className="py-3 text-center text-sm text-ink-muted">No pending assignments</p>
             ) : (
-              assignments.filter(a => !a.completed).sort((a, b) => a.due_date.localeCompare(b.due_date)).slice(0, 5).map(a => (
-                <div key={a.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #F1F5F9" }}>
-                  <p style={{ fontWeight: 500, fontSize: "0.85rem", color: "#334155" }}>{a.title}</p>
-                  <span style={{ background: "rgba(249,115,22,0.1)", color: "#F97316", borderRadius: "8px", padding: "3px 10px", fontSize: "0.72rem", fontWeight: 700 }}>{a.due_date}</span>
-                </div>
-              ))
+              <ul className="divide-y divide-line">
+                {[...pendingAssignments].sort((a, b) => a.due_date.localeCompare(b.due_date)).slice(0, 5).map(a => (
+                  <li key={a.id} className="flex items-center justify-between gap-3 py-2.5">
+                    <p className="min-w-0 truncate text-sm text-ink">{a.title}</p>
+                    <span className="shrink-0 rounded-md bg-accent-tint px-2 py-0.5 text-xs font-medium tabular-nums text-accent-strong">{a.due_date}</span>
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
         </div>
       </div>
-    </main>
+    </section>
   )
 }

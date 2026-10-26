@@ -167,8 +167,6 @@ export default function Dashboard({ email, logout }: Props) {
   return (
     <main className={`${isDark ? "dark" : ""} flex min-h-screen bg-paper text-ink`}>
       <style>{`
-        /* Space Grotesk is still used by screens that have not been restyled yet. */
-        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700;900&display=swap');
         @keyframes toastIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .toast { animation: toastIn 0.2s ease; }
         ::-webkit-scrollbar { width: 6px; }
