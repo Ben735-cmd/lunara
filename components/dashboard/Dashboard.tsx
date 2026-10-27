@@ -10,6 +10,7 @@ import CourseViewer from "./CourseViewer"
 import Notes from "./Notes"
 import Calendar from "./Calendar"
 import QuestionSolver from "./QuestionSolver"
+import PastPapers from "./PastPapers"
 import Assignments from "./Assignments"
 import ProfileCenter from "./ProfileCenter"
 import { DashboardLoading } from "../ui/Skeleton"
@@ -217,6 +218,8 @@ export default function Dashboard({ email, logout }: Props) {
         <Notes />
       ) : activeNav === "Calendar" ? (
         <Calendar />
+      ) : activeNav === "Past papers" ? (
+        <PastPapers />
       ) : activeNav === "Solver" ? (
         <QuestionSolver />
       ) : (

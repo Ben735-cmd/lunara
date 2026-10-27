@@ -11,6 +11,7 @@ import {
   LayoutDashboard,
   ListChecks,
   LogOut,
+  Library,
   Menu,
   NotebookText,
   type LucideIcon,
@@ -35,6 +36,7 @@ type SidebarProps = {
 const navIcons: Record<string, LucideIcon> = {
   Assignments: ListChecks,
   Notes: NotebookText,
+  "Past papers": Library,
   Calendar: CalendarDays,
   Solver: Calculator,
 }
@@ -95,7 +97,7 @@ export default function Sidebar({ logout, onSelectCourse, selectedCourseId, acti
     if (isMobile) setMobileOpen(false)
   }
 
-  const navItems = ["Assignments", "Notes", "Calendar", "Solver"]
+  const navItems = ["Assignments", "Notes", "Calendar", "Past papers", "Solver"]
 
   const itemBase =
     "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors"

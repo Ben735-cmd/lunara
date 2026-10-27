@@ -11,7 +11,8 @@ Smarter learning for modern students. Lunara is a student dashboard that puts yo
 - **Spaced-repetition flashcards** – cards are scheduled with the SM-2 algorithm so you review what you are about to forget.
 - **Notes** – keep notes alongside your courses.
 - **Assignments and calendar** – track deadlines and see them on a calendar.
-- **Question solver** – step-by-step solutions to typed questions or uploaded problems.
+- **Question solver** – step-by-step solutions from typed questions, uploaded files or a live camera capture.
+- **Past papers** – previous exam papers matched to your course codes, with year and exam-type filters.
 - **Installable PWA** – works as an app on phones and desktops, with a mobile-friendly sidebar drawer.
 
 ## Tech stack
@@ -43,7 +44,7 @@ GROQ_API_KEY=your-groq-api-key
 
 ### 3. Set up the database
 
-Create a Supabase project, then run the SQL in the Supabase SQL editor. `supabase/flashcards.sql` creates the flashcards table with Row Level Security policies. The app also expects `courses`, `assignments`, `notes`, `profiles` and `study_sessions` tables, plus an `avatars` storage bucket, each restricted to the owning user with Row Level Security.
+Create a Supabase project, then run the SQL in the Supabase SQL editor. `supabase/flashcards.sql` creates the flashcards table with Row Level Security policies. `supabase/past_papers.sql` creates the past papers table, a private `past-papers` storage bucket and an `admins` table (see the comments in the file for adding yourself as admin). The app also expects `courses`, `assignments`, `notes`, `profiles` and `study_sessions` tables, plus an `avatars` storage bucket, each restricted to the owning user with Row Level Security.
 
 ### 4. Run the dev server
 

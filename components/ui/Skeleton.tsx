@@ -290,3 +290,33 @@ export function SidebarCoursesSkeleton() {
     </div>
   )
 }
+
+export function PapersSkeleton() {
+  return (
+    <Region label="Loading past papers" className={shell}>
+      <PageHeader />
+      <div className="mt-8 flex gap-3">
+        <Skeleton className="h-11 flex-1 rounded-lg" />
+        <Skeleton className="hidden h-11 w-40 rounded-lg sm:block" />
+        <Skeleton className="hidden h-11 w-40 rounded-lg sm:block" />
+      </div>
+      {Array.from({ length: 2 }).map((_, g) => (
+        <div key={g} className={`${panel} mt-6 p-6`}>
+          <Skeleton className="h-6 w-40" />
+          <div className="mt-4 divide-y divide-line">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-4 py-4">
+                <Skeleton className="h-9 w-9 shrink-0 rounded-lg" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-1/2" />
+                  <Skeleton className="h-3 w-1/4" />
+                </div>
+                <Skeleton className="h-9 w-20 rounded-lg" />
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </Region>
+  )
+}
