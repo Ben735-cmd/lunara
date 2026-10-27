@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { FileText } from "lucide-react"
 import { supabase } from "../../lib/supabase"
 
@@ -17,52 +17,74 @@ export default function AddCourseModal({ userId, refreshCourses }: Props) {
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState("")
 
+  const abortRef = useRef<AbortController | null>(null)
+
+  // Closing the form drops any upload in progress and clears the fields, so
+  // the next time it opens it starts fresh.
+  function closeForm() {
+    abortRef.current?.abort()
+    abortRef.current = null
+    setTitle("")
+    setCode("")
+    setFile(null)
+    setError("")
+    setUploading(false)
+    setOpen(false)
+  }
+
   async function addCourse() {
     if (!title || !code) {
       setError("Enter a course title and code.")
+      return
+    }
+    if (file && file.size > 4 * 1024 * 1024) {
+      setError("That file is over 4 MB. Choose a smaller file, or create the course without it.")
       return
     }
 
     setUploading(true)
     setError("")
 
+    const controller = new AbortController()
+    abortRef.current = controller
     let courseContent = ""
 
-    if (file) {
-      const formData = new FormData()
-      formData.append("file", file)
+    try {
+      if (file) {
+        const formData = new FormData()
+        formData.append("file", file)
+        const timer = setTimeout(() => controller.abort(), 45000)
+        try {
+          const res = await fetch("/api/extract", { method: "POST", body: formData, signal: controller.signal })
+          const data = await res.json().catch(() => null)
+          if (!res.ok || !data) {
+            setError(data?.error || "Could not read that file. Try a smaller PDF or Word file.")
+            setUploading(false)
+            return
+          }
+          courseContent = data.text || ""
+        } finally {
+          clearTimeout(timer)
+        }
+      }
 
-      const res = await fetch("/api/extract", {
-        method: "POST",
-        body: formData,
-      })
-
-      const data = await res.json()
-      courseContent = data.text || ""
-    }
-
-    const { error: insertError } = await supabase.from("courses").insert([
-      {
-        title,
-        code,
-        progress: 0,
-        user_id: userId,
-        content: courseContent,
-      },
-    ])
-
-    if (insertError) {
-      setError(insertError.message)
+      const { error: insertError } = await supabase.from("courses").insert([
+        { title, code, progress: 0, user_id: userId, content: courseContent },
+      ])
+      if (controller.signal.aborted) return
+      if (insertError) {
+        setError(insertError.message)
+        setUploading(false)
+        return
+      }
+      abortRef.current = null
+      closeForm()
+      refreshCourses()
+    } catch {
+      if (abortRef.current !== controller) return // cancelled by the user
+      setError("This is taking too long. Check your connection and try again.")
       setUploading(false)
-      return
     }
-
-    setTitle("")
-    setCode("")
-    setFile(null)
-    setOpen(false)
-    setUploading(false)
-    refreshCourses()
   }
 
   const inputClass =
@@ -139,7 +161,7 @@ export default function AddCourseModal({ userId, refreshCourses }: Props) {
 
             <div className="mt-6 flex gap-3">
               <button
-                onClick={() => { setOpen(false); setError("") }}
+                onClick={closeForm}
                 className="flex-1 rounded-lg border border-line bg-surface py-2.5 text-sm font-medium text-ink transition-colors hover:bg-paper"
               >
                 Cancel
