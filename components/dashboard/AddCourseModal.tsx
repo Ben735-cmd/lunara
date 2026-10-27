@@ -9,6 +9,13 @@ type Props = {
   refreshCourses: () => void
 }
 
+const MAX_FILE_MB = 4
+const MAX_FILE_BYTES = MAX_FILE_MB * 1024 * 1024
+
+function formatSize(bytes: number) {
+  return bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`
+}
+
 export default function AddCourseModal({ userId, refreshCourses }: Props) {
   const [open, setOpen] = useState(false)
   const [title, setTitle] = useState("")
@@ -37,8 +44,8 @@ export default function AddCourseModal({ userId, refreshCourses }: Props) {
       setError("Enter a course title and code.")
       return
     }
-    if (file && file.size > 4 * 1024 * 1024) {
-      setError("That file is over 4 MB. Choose a smaller file, or create the course without it.")
+    if (file && file.size > MAX_FILE_BYTES) {
+      setError(`That file is ${formatSize(file.size)}, over the ${MAX_FILE_MB} MB limit. Choose a smaller file, or create the course without it.`)
       return
     }
 
@@ -137,12 +144,12 @@ export default function AddCourseModal({ userId, refreshCourses }: Props) {
                 {file ? (
                   <>
                     <span className="mt-2 text-sm font-medium text-accent-strong">{file.name}</span>
-                    <span className="mt-0.5 text-xs text-ink-muted">Click to choose a different file</span>
+                    <span className="mt-0.5 text-xs text-ink-muted">{formatSize(file.size)} · Click to choose a different file</span>
                   </>
                 ) : (
                   <>
                     <span className="mt-2 text-sm font-medium text-ink">Upload course document</span>
-                    <span className="mt-0.5 text-xs text-ink-muted">PDF or Word (.docx)</span>
+                    <span className="mt-0.5 text-xs text-ink-muted">PDF or Word (.docx) · Max {MAX_FILE_MB} MB</span>
                   </>
                 )}
               </button>
@@ -151,7 +158,17 @@ export default function AddCourseModal({ userId, refreshCourses }: Props) {
                 type="file"
                 accept=".pdf,.docx"
                 className="hidden"
-                onChange={(e) => setFile(e.target.files?.[0] || null)}
+                onChange={(e) => {
+                  const picked = e.target.files?.[0] || null
+                  e.target.value = ""
+                  if (picked && picked.size > MAX_FILE_BYTES) {
+                    setFile(null)
+                    setError(`"${picked.name}" is ${formatSize(picked.size)}. Files must be under ${MAX_FILE_MB} MB. Compress it or upload fewer pages.`)
+                    return
+                  }
+                  setError("")
+                  setFile(picked)
+                }}
               />
 
               {error && (
