@@ -83,17 +83,19 @@ export default function Dashboard({ email, logout }: Props) {
     const user = await getCurrentUser()
     if (!user) return
     setUserId(user.id)
-    const { data, error } = await supabase.from("courses").select("*").eq("user_id", user.id)
+    // Progress is calculated from flashcard reviews and quiz results, never typed in.
+    // All three queries go out together so loading costs one round trip, not three.
+    const [coursesRes, cardsRes, attemptsRes] = await Promise.all([
+      supabase.from("courses").select("*").eq("user_id", user.id),
+      supabase.from("flashcards").select("course_id, interval_days").eq("user_id", user.id),
+      supabase.from("quiz_attempts").select("course_id, score, total, created_at").eq("user_id", user.id),
+    ])
+    const { data, error } = coursesRes
     if (error) {
       console.error(error)
       showToast("Couldn't load your courses. Please try again.")
       return
     }
-    // Progress is calculated from flashcard reviews and quiz results, never typed in.
-    const [cardsRes, attemptsRes] = await Promise.all([
-      supabase.from("flashcards").select("course_id, interval_days").eq("user_id", user.id),
-      supabase.from("quiz_attempts").select("course_id, score, total, created_at").eq("user_id", user.id),
-    ])
     const cards = (cardsRes.data ?? []) as { course_id: string; interval_days: number }[]
     const attempts = (attemptsRes.data ?? []) as (QuizAttempt & { course_id: string })[]
     setCourses(
