@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { Bell, Check, ChevronDown, Lock, Mail, Moon, Settings, Sun, User } from "lucide-react"
 import { supabase } from "../../lib/supabase"
 import { getCurrentUser } from "../../lib/auth"
+import { getStoredNotifications, getStoredTheme, storeNotifications } from "../../lib/preferences"
 
 type Profile = {
   id?: string
@@ -68,6 +69,7 @@ export default function ProfileCenter({ email, onThemeChange, isDark, onStreakUp
   const [notifications, setNotifications] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [saveError, setSaveError] = useState(false)
   const [newPassword, setNewPassword] = useState("")
   const [passwordSaving, setPasswordSaving] = useState(false)
   const [passwordSaved, setPasswordSaved] = useState(false)
@@ -111,8 +113,17 @@ export default function ProfileCenter({ email, onThemeChange, isDark, onStreakUp
       setFullName(data.full_name || "")
       setUniversity(data.university || "")
       setAvatarUrl(data.avatar_url || "")
-      setNotifications(data.notifications ?? true)
-      if (data.dark_mode !== isDark) onThemeChange(data.dark_mode)
+      // The choice saved on this device wins, so a refresh never undoes it.
+      // A device with nothing saved yet takes the profile's setting instead.
+      const localTheme = getStoredTheme()
+      if (localTheme === null) onThemeChange(!!data.dark_mode)
+      else if (localTheme !== !!data.dark_mode) void persist({ dark_mode: localTheme })
+      const localNotifications = getStoredNotifications()
+      const notificationsOn = localNotifications ?? data.notifications ?? true
+      setNotifications(notificationsOn)
+      if (localNotifications !== null && localNotifications !== (data.notifications ?? true)) {
+        void persist({ notifications: localNotifications })
+      }
       updateStudyStreak(user.id, data.study_streak || 0, data.last_active_date || "")
     } else {
       const newProfile: Profile = {
@@ -142,19 +153,35 @@ export default function ProfileCenter({ email, onThemeChange, isDark, onStreakUp
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
-  async function saveProfile() {
+  // Writes only the fields given, so saving one setting never overwrites another.
+  // Returns false when the save did not go through.
+  async function persist(patch: Partial<Profile>): Promise<boolean> {
     const user = await getCurrentUser()
-    if (!user) return
+    if (!user) return false
+    const { data, error } = await supabase.from("profiles").update(patch).eq("user_id", user.id).select("user_id")
+    if (error) {
+      console.error("Could not save profile:", error.message)
+      return false
+    }
+    if (!data || data.length === 0) {
+      const { error: insertError } = await supabase.from("profiles").insert([{ user_id: user.id, ...patch }])
+      if (insertError) {
+        console.error("Could not create profile:", insertError.message)
+        return false
+      }
+    }
+    return true
+  }
+
+  async function saveProfile() {
     setSaving(true)
-    await supabase.from("profiles").upsert({
-      user_id: user.id,
-      full_name: fullName,
-      university,
-      avatar_url: avatarUrl,
-      dark_mode: isDark,
-      notifications,
-    }, { onConflict: "user_id" })
+    setSaveError(false)
+    const ok = await persist({ full_name: fullName, university, avatar_url: avatarUrl })
     setSaving(false)
+    if (!ok) {
+      setSaveError(true)
+      return
+    }
     setSaved(true)
     fetchProfile()
     setTimeout(() => setSaved(false), 2000)
@@ -162,32 +189,15 @@ export default function ProfileCenter({ email, onThemeChange, isDark, onStreakUp
 
   async function toggleDarkMode() {
     const newVal = !isDark
-    onThemeChange(newVal)
-    const user = await getCurrentUser()
-    if (!user) return
-    await supabase.from("profiles").upsert({
-      user_id: user.id,
-      full_name: fullName,
-      university,
-      avatar_url: avatarUrl,
-      dark_mode: newVal,
-      notifications,
-    }, { onConflict: "user_id" })
+    onThemeChange(newVal) // also remembers it on this device
+    await persist({ dark_mode: newVal })
   }
 
   async function toggleNotifications() {
     const newVal = !notifications
     setNotifications(newVal)
-    const user = await getCurrentUser()
-    if (!user) return
-    await supabase.from("profiles").upsert({
-      user_id: user.id,
-      full_name: fullName,
-      university,
-      avatar_url: avatarUrl,
-      dark_mode: isDark,
-      notifications: newVal,
-    }, { onConflict: "user_id" })
+    storeNotifications(newVal)
+    await persist({ notifications: newVal })
   }
 
   async function changePassword() {
@@ -210,6 +220,7 @@ export default function ProfileCenter({ email, onThemeChange, isDark, onStreakUp
     if (!error) {
       const { data } = supabase.storage.from("avatars").getPublicUrl(fileName)
       setAvatarUrl(data.publicUrl)
+      await persist({ avatar_url: data.publicUrl })
     }
     setUploading(false)
   }
@@ -323,6 +334,11 @@ export default function ProfileCenter({ email, onThemeChange, isDark, onStreakUp
                 <p className="mb-1.5 text-xs text-ink-muted">Or select your avatar above to upload one.</p>
                 <input id="profile-avatar" type="text" placeholder="https://..." value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} className={inputClass} />
               </div>
+              {saveError && (
+                <p role="alert" className="mb-3 rounded-lg bg-danger-tint px-3 py-2 text-sm text-danger">
+                  Could not save. Check your connection and try again.
+                </p>
+              )}
               <button onClick={saveProfile} disabled={saving} className={`${primaryButton} flex items-center justify-center gap-1.5`}>
                 {saving ? "Saving..." : saved ? <><Check size={16} aria-hidden="true" /> Saved</> : "Save profile"}
               </button>

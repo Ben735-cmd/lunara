@@ -6,6 +6,7 @@ import { BookOpen, ClipboardList, Flame, Search, Trash2, TrendingUp, X } from "l
 import { supabase } from "../../lib/supabase"
 import { getCurrentUser } from "../../lib/auth"
 import { calculateProgress, type QuizAttempt } from "../../lib/progress"
+import { applyThemeClass, initialTheme, storeTheme } from "../../lib/preferences"
 import Sidebar from "../layout/Sidebar"
 import AddCourseModal from "./AddCourseModal"
 import AddAssignmentModal from "./AddAssignmentModal"
@@ -55,7 +56,15 @@ export default function Dashboard({ email, logout }: Props) {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null)
   const [activeNav, setActiveNav] = useState("Dashboard")
-  const [isDark, setIsDark] = useState(false)
+  // Starts from the choice saved on this device, so a refresh keeps your theme.
+  const [isDark, setIsDark] = useState(initialTheme)
+
+  function changeTheme(dark: boolean) {
+    setIsDark(dark)
+    storeTheme(dark)
+  }
+
+  useEffect(() => { applyThemeClass(isDark) }, [isDark])
   const [studyStreak, setStudyStreak] = useState(0)
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState<{ message: string; type: "error" | "success" } | null>(null)
@@ -279,7 +288,7 @@ export default function Dashboard({ email, logout }: Props) {
               <ProfileCenter
                 email={email}
                 isDark={isDark}
-                onThemeChange={(dark) => setIsDark(dark)}
+                onThemeChange={changeTheme}
                 onStreakUpdate={(streak) => setStudyStreak(streak)}
               />
             </div>

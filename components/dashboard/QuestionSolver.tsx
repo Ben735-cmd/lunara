@@ -4,6 +4,8 @@ import { useState } from "react"
 import { AlertTriangle, Camera, FileText, Image as ImageIcon, Upload } from "lucide-react"
 import dynamic from "next/dynamic"
 import CameraCapture from "./CameraCapture"
+import SolverHistory from "./SolverHistory"
+import { makeThumbnail, saveSolvedQuestion, titleFromSolution } from "../../lib/solvedHistory"
 import { SolutionSkeleton } from "../ui/Skeleton"
 
 // Maths rendering is large, so it only loads once there is an answer to show.
@@ -18,12 +20,16 @@ export default function QuestionSolver() {
   const [error, setError] = useState("")
   const [showExtracted, setShowExtracted] = useState(false)
   const [cameraOpen, setCameraOpen] = useState(false)
+  const [tab, setTab] = useState<"new" | "history">("new")
+  const [historyKey, setHistoryKey] = useState(0)
+  const [savedToHistory, setSavedToHistory] = useState(false)
 
   function handleFileChange(f: File) {
     setFile(f)
     setSolution("")
     setExtractedText("")
     setError("")
+    setSavedToHistory(false)
 
     if (f.type.startsWith("image/")) {
       const reader = new FileReader()
@@ -52,12 +58,31 @@ export default function QuestionSolver() {
       } else {
         setSolution(data.solution)
         if (data.extractedText) setExtractedText(data.extractedText)
+        void saveToHistory(data.solution, data.extractedText)
       }
     } catch {
       setError("Failed to connect to server.")
     }
 
     setLoading(false)
+  }
+
+  // Keep every solved question for later. Saving never blocks or breaks solving.
+  async function saveToHistory(answer: string, questionText?: string) {
+    if (!file) return
+    const type = file.type.startsWith("image/") ? "image" : file.name.toLowerCase().endsWith(".docx") ? "docx" : "pdf"
+    const saved = await saveSolvedQuestion({
+      title: titleFromSolution(answer, file.name),
+      source_name: type === "image" ? null : file.name,
+      source_type: type,
+      question_text: questionText ? questionText.slice(0, 60000) : null,
+      thumbnail: type === "image" && preview ? await makeThumbnail(preview) : null,
+      solution: answer.slice(0, 60000),
+    })
+    if (saved) {
+      setSavedToHistory(true)
+      setHistoryKey((k) => k + 1)
+    }
   }
 
   const panel = "rounded-xl border border-line bg-surface p-6"
@@ -73,7 +98,25 @@ export default function QuestionSolver() {
         </p>
       </div>
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-2">
+      <div role="tablist" aria-label="Solver" className="mt-6 inline-flex gap-1 rounded-lg border border-line bg-surface p-1">
+        {([["new", "New question"], ["history", "History"]] as const).map(([id, label]) => (
+          <button
+            key={id}
+            role="tab"
+            aria-selected={tab === id}
+            onClick={() => setTab(id)}
+            className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
+              tab === id ? "bg-accent-tint text-accent-strong" : "text-ink-muted hover:text-ink"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "history" && <SolverHistory refreshKey={historyKey} />}
+
+      <div className={`mt-8 grid gap-6 lg:grid-cols-2 ${tab === "history" ? "hidden" : ""}`}>
         {/* Upload panel */}
         <div className="flex flex-col gap-6">
           <div className={panel}>
@@ -226,6 +269,11 @@ export default function QuestionSolver() {
                 </div>
               )}
 
+              {savedToHistory && (
+                <p className="mb-3 text-xs text-ink-muted">
+                  Saved to your <button onClick={() => setTab("history")} className="font-medium text-accent-strong underline">history</button>
+                </p>
+              )}
               <RichText>{solution}</RichText>
             </div>
           )}

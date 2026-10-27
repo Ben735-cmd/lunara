@@ -19,6 +19,7 @@ export default function PrivacyPage() {
         <p><strong>Profile.</strong> Your full name, university, profile picture and your light or dark mode and notification settings, if you add them.</p>
         <p><strong>Your study content.</strong> Courses and the material you add to them, notes, assignments, study sessions, flashcards, quiz progress and your study streak.</p>
         <p><strong>Questions you submit.</strong> Files and photos you send to the Question solver, including photos taken with your camera.</p>
+        <p><strong>Solved question history.</strong> For each question you solve we save the solution, the text read from a PDF or Word file, and a small preview of any photo, in your account so you can find them again. The original file or full-size photo is not kept. You can delete any item from the History tab.</p>
       </Section>
 
       <Section title="How we use it">
@@ -37,7 +38,7 @@ export default function PrivacyPage() {
       <Section title="Who handles your data">
         <ul>
           <li><strong>Supabase</strong> provides sign-in, the database and file storage for profile pictures. Your content is stored there and protected so that each account can only read its own rows.</li>
-          <li><strong>Groq</strong> runs the AI models. Text from your courses, your chat messages, and files or photos you submit to the Question solver are sent to Groq to produce a response. We do not store submitted question files on our servers.</li>
+          <li><strong>Groq</strong> runs the AI models. Text from your courses, your chat messages, and files or photos you submit to the Question solver are sent to Groq to produce a response. We do not keep the files you submit; only the saved history described above is stored.</li>
           <li><strong>Google</strong> handles Google sign-in if you choose it, and serves ads through Google AdSense. Google may use cookies or similar technologies for ads; see <a href="https://policies.google.com/technologies/ads" rel="noopener noreferrer">how Google uses data from sites that use its services</a>.</li>
           <li><strong>Vercel</strong> hosts the app and may log standard request information such as IP address and browser type.</li>
         </ul>
