@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   description: "What Lunara collects, why, who processes it, and the choices you have.",
 }
 
-const ISSUES = "https://github.com/Ben735-cmd/lunara/issues"
+const EMAIL = "benlubona735@gmail.com"
 
 export default function PrivacyPage() {
   return (
@@ -49,7 +49,7 @@ export default function PrivacyPage() {
       </Section>
 
       <Section title="Keeping your data">
-        <p>We keep your data while your account exists. You can delete individual courses, notes, assignments and sessions inside the app at any time. To have your whole account and its data removed, open an issue at <a href={ISSUES} rel="noopener noreferrer">the project&apos;s GitHub page</a> and we will delete it. Please do not post private details in the issue; we will tell you how to verify the account.</p>
+        <p>We keep your data while your account exists. You can delete individual courses, notes, assignments and sessions inside the app at any time. To have your whole account and its data removed, email <a href={`mailto:${EMAIL}`}>{EMAIL}</a> from the address you signed up with and we will delete it.</p>
       </Section>
 
       <Section title="Your choices">
@@ -70,7 +70,7 @@ export default function PrivacyPage() {
       </Section>
 
       <Section title="Contact">
-        <p>Questions or requests about your data: open an issue at <a href={ISSUES} rel="noopener noreferrer">github.com/Ben735-cmd/lunara/issues</a>.</p>
+        <p>Questions or requests about your data: <a href={`mailto:${EMAIL}`}>{EMAIL}</a>.</p>
       </Section>
     </LegalPage>
   )
