@@ -2,8 +2,12 @@
 
 import { useState } from "react"
 import { AlertTriangle, Camera, FileText, Image as ImageIcon, Upload } from "lucide-react"
+import dynamic from "next/dynamic"
 import CameraCapture from "./CameraCapture"
 import { SolutionSkeleton } from "../ui/Skeleton"
+
+// Maths rendering is large, so it only loads once there is an answer to show.
+const RichText = dynamic(() => import("../ui/RichText"), { loading: () => <SolutionSkeleton /> })
 
 export default function QuestionSolver() {
   const [file, setFile] = useState<File | null>(null)
@@ -54,28 +58,6 @@ export default function QuestionSolver() {
     }
 
     setLoading(false)
-  }
-
-  function formatSolution(text: string) {
-    return text.split("\n").map((line, i) => {
-      if (line.startsWith("## ")) {
-        return (
-          <h3 key={i} className="mb-2 mt-5 text-base font-semibold text-ink">{line.replace("## ", "")}</h3>
-        )
-      }
-      if (line.match(/^\d+\./)) {
-        return (
-          <div key={i} className="mb-2 flex gap-3">
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent-tint text-xs font-semibold text-accent-strong">
-              {line.match(/^\d+/)?.[0]}
-            </span>
-            <p className="text-sm leading-relaxed text-ink">{line.replace(/^\d+\.\s*/, "")}</p>
-          </div>
-        )
-      }
-      if (line.trim() === "") return <div key={i} className="h-1" />
-      return <p key={i} className="mb-1.5 text-sm leading-relaxed text-ink">{line}</p>
-    })
   }
 
   const panel = "rounded-xl border border-line bg-surface p-6"
@@ -244,7 +226,7 @@ export default function QuestionSolver() {
                 </div>
               )}
 
-              <div>{formatSolution(solution)}</div>
+              <RichText>{solution}</RichText>
             </div>
           )}
 

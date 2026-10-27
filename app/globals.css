@@ -123,3 +123,12 @@ body {
 .bg-blob-b { animation: blob-drift-b 32s ease-in-out infinite; }
 .bg-blob-c { animation: blob-drift-c 29s ease-in-out infinite; }
 .bg-star { opacity: 0.2; animation: star-twinkle 5s ease-in-out infinite; }
+
+/* Maths from the AI: keep long equations inside the card and scrollable */
+.rich-text .katex-display {
+  margin: 0.9em 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.25em 0;
+}
+.rich-text .katex { font-size: 1.05em; }

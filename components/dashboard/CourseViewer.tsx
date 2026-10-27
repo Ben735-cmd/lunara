@@ -1,10 +1,14 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import dynamic from "next/dynamic"
 import { CourseSkeleton, GeneratingSkeleton } from "../ui/Skeleton"
 import { AlertTriangle, ArrowLeft, Brain, Check, FileText, Layers, Lightbulb, Sparkles, X } from "lucide-react"
 import { supabase } from "../../lib/supabase"
 import { schedule, describeInterval, type Grade } from "../../lib/sm2"
+
+const RichText = dynamic(() => import("../ui/RichText"), { loading: () => <GeneratingSkeleton text="Formatting..." rows={3} /> })
+
 
 type Course = {
   id: string
@@ -448,7 +452,7 @@ export default function CourseViewer({ courseId, onBack }: Props) {
                 {summaryError && !summaryLoading && <ErrorBanner message={summaryError} />}
 
                 {summary && !summaryLoading && !summaryError && (
-                  <div className="whitespace-pre-wrap text-sm leading-relaxed text-ink">{summary}</div>
+                  <RichText>{summary}</RichText>
                 )}
 
                 {!summary && !summaryLoading && !summaryError && (
@@ -710,7 +714,7 @@ export default function CourseViewer({ courseId, onBack }: Props) {
                 {explanation && !explainLoading && !explainError && (
                   <div className="rounded-lg border border-line bg-accent-tint p-5">
                     <p className="mb-3 text-xs font-medium uppercase tracking-wide text-accent-strong">AI explanation</p>
-                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink">{explanation}</p>
+                    <RichText>{explanation}</RichText>
                   </div>
                 )}
               </div>

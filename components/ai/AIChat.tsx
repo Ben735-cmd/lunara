@@ -1,7 +1,10 @@
 "use client"
 
 import { useState } from "react"
+import dynamic from "next/dynamic"
 import { supabase } from "../../lib/supabase"
+
+const RichText = dynamic(() => import("../ui/RichText"))
 
 export default function AIChat() {
   const [prompt, setPrompt] = useState("")
@@ -82,8 +85,8 @@ export default function AIChat() {
       </div>
 
       {response && (
-        <div className="mt-5 whitespace-pre-wrap rounded-lg border border-line bg-paper p-4 text-sm leading-relaxed text-ink">
-          {response}
+        <div className="mt-5 rounded-lg border border-line bg-paper p-4">
+          <RichText>{response}</RichText>
         </div>
       )}
     </div>

@@ -2,6 +2,15 @@ import { NextRequest, NextResponse } from "next/server"
 import mammoth from "mammoth"
 import { askText, askVision } from "../../../lib/groq"
 
+// Model answers contain LaTeX such as \underbrace or \upsilon, so they only get the
+// light clean-up. The stricter sanitizeText below would strip "\u" from them.
+function cleanAnswer(text: string): string {
+  return text
+    .replace(/\u0000/g, "")
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "")
+    .replace(/[\uD800-\uDFFF]/g, "")
+}
+
 function sanitizeText(text: string): string {
   return text
     .replace(/\u0000/g, "")
@@ -27,7 +36,13 @@ Format your response as:
 [numbered steps]
 
 ## Final Answer
-[clear final answer]`,
+[clear final answer]
+
+Formatting rules:
+- Use Markdown only: "##" headings, numbered lists and **bold**.
+- Write every formula in LaTeX: $...$ inline, and $$...$$ on its own line for important equations.
+- Put each step on its own numbered line, with the working underneath it.
+- Never mix plain text and LaTeX in the same expression.`,
     },
     { role: "user", content: `Please solve this:\n\n${questionText}` },
   ])
@@ -87,13 +102,19 @@ Format as:
 [numbered steps]
 
 ## Final Answer
-[clear final answer]`,
+[clear final answer]
+
+Formatting rules:
+- Use Markdown only: "##" headings, numbered lists and **bold**.
+- Write every formula in LaTeX: $...$ inline, and $$...$$ on its own line for important equations.
+- Put each step on its own numbered line, with the working underneath it.
+- Never mix plain text and LaTeX in the same expression.`,
             },
           ],
         },
       ])
 
-      const solution = sanitizeText(visionAnswer || "Could not read image.")
+      const solution = cleanAnswer(visionAnswer || "Could not read image.")
       return NextResponse.json({ solution })
     }
 
