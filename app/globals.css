@@ -100,3 +100,26 @@ body {
 .flashcard-face-back {
   transform: rotateY(180deg);
 }
+
+/* Animated app background (components/ui/AnimatedBackground.tsx) */
+@keyframes blob-drift-a {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(8vw, 10vh, 0) scale(1.15); }
+}
+@keyframes blob-drift-b {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1.1); }
+  50% { transform: translate3d(-10vw, -8vh, 0) scale(0.95); }
+}
+@keyframes blob-drift-c {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-6vw, -12vh, 0) scale(1.2); }
+}
+@keyframes star-twinkle {
+  0%, 100% { opacity: 0.1; transform: scale(0.8); }
+  50% { opacity: 0.8; transform: scale(1.4); }
+}
+.bg-blob { will-change: transform; }
+.bg-blob-a { animation: blob-drift-a 26s ease-in-out infinite; }
+.bg-blob-b { animation: blob-drift-b 32s ease-in-out infinite; }
+.bg-blob-c { animation: blob-drift-c 29s ease-in-out infinite; }
+.bg-star { opacity: 0.2; animation: star-twinkle 5s ease-in-out infinite; }

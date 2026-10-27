@@ -322,7 +322,7 @@ export default function CourseViewer({ courseId, onBack }: Props) {
   const panel = "rounded-xl border border-line bg-surface"
   const primaryButton =
     "shrink-0 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-on-accent transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60"
-  const shell = "w-full flex-1 overflow-y-auto bg-paper px-5 pb-8 pt-[88px] md:px-12 md:py-11"
+  const shell = "w-full flex-1 overflow-y-auto px-5 pb-8 pt-[88px] md:px-12 md:py-11"
 
   if (!course) {
     return <CourseSkeleton />

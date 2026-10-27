@@ -1,3 +1,5 @@
+import AnimatedBackground from "./AnimatedBackground"
+
 // Skeleton placeholders shown while data loads. They use the theme tokens, so
 // they follow light and dark mode. The pulse stops for people who prefer
 // reduced motion (see globals.css).
@@ -6,7 +8,7 @@ export function Skeleton({ className = "" }: { className?: string }) {
   return <div aria-hidden="true" className={`animate-pulse rounded-md bg-line ${className}`} />
 }
 
-const shell = "w-full flex-1 overflow-hidden bg-paper px-5 pb-8 pt-[88px] md:px-12 md:py-11"
+const shell = "w-full flex-1 overflow-hidden px-5 pb-8 pt-[88px] md:px-12 md:py-11"
 const panel = "rounded-xl border border-line bg-surface"
 
 function Region({ label, className, children }: { label: string; className?: string; children: React.ReactNode }) {
@@ -114,7 +116,8 @@ export function AppSkeleton() {
 /** Dashboard home while its data loads (sidebar already on screen). */
 export function DashboardLoading({ dark }: { dark: boolean }) {
   return (
-    <main className={`${dark ? "dark" : ""} flex min-h-screen bg-paper`} role="status" aria-busy="true" aria-label="Loading dashboard">
+    <main className={`${dark ? "dark" : ""} relative isolate flex min-h-screen bg-paper`} role="status" aria-busy="true" aria-label="Loading dashboard">
+      <AnimatedBackground />
       <aside className="hidden min-h-screen w-[260px] flex-col justify-between border-r border-line bg-surface px-3 py-6 md:flex">
         <div>
           <div className="mb-8 flex items-center gap-3 px-3">

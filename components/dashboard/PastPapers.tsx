@@ -156,7 +156,7 @@ export default function PastPapers() {
   const panel = "rounded-xl border border-line bg-surface"
 
   return (
-    <section className="w-full flex-1 overflow-y-auto bg-paper px-5 pb-8 pt-[88px] md:px-12 md:py-11">
+    <section className="w-full flex-1 overflow-y-auto px-5 pb-8 pt-[88px] md:px-12 md:py-11">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight text-ink">Past papers</h1>

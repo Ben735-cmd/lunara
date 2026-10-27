@@ -9,6 +9,7 @@ import Sidebar from "../layout/Sidebar"
 import AddCourseModal from "./AddCourseModal"
 import AddAssignmentModal from "./AddAssignmentModal"
 import ProfileCenter from "./ProfileCenter"
+import AnimatedBackground from "../ui/AnimatedBackground"
 import {
   AssignmentsSkeleton,
   CalendarSkeleton,
@@ -175,7 +176,8 @@ export default function Dashboard({ email, logout }: Props) {
     "rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:bg-paper"
 
   return (
-    <main className={`${isDark ? "dark" : ""} flex min-h-screen bg-paper text-ink`}>
+    <main className={`${isDark ? "dark" : ""} relative isolate flex min-h-screen bg-paper text-ink`}>
+      <AnimatedBackground />
       <style>{`
         @keyframes toastIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .toast { animation: toastIn 0.2s ease; }
@@ -236,7 +238,7 @@ export default function Dashboard({ email, logout }: Props) {
         <QuestionSolver />
       ) : (
         // pt-[88px] on mobile clears the fixed menu button from the Sidebar
-        <section className="w-full flex-1 overflow-y-auto bg-paper px-5 pb-8 pt-[88px] md:px-12 md:py-11">
+        <section className="w-full flex-1 overflow-y-auto px-5 pb-8 pt-[88px] md:px-12 md:py-11">
 
           {/* Header */}
           <div className="flex flex-wrap items-center justify-between gap-4">

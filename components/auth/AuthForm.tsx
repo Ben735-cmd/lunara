@@ -6,6 +6,7 @@ import { supabase } from "../../lib/supabase"
 import { BookOpen, Calculator, CalendarDays, Layers, NotebookText, Sparkles } from "lucide-react"
 import CardPreview from "./CardPreview"
 import Logo from "../ui/Logo"
+import AnimatedBackground from "../ui/AnimatedBackground"
 
 const hubFeatures = [
   { Icon: BookOpen, label: "Courses and documents" },
@@ -75,7 +76,8 @@ export default function AuthForm() {
     "w-full rounded-lg border border-line bg-surface px-3.5 py-3 text-ink placeholder:text-ink-muted/70 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
 
   return (
-    <main className="min-h-screen bg-paper lg:grid lg:grid-cols-2">
+    <main className="relative isolate min-h-screen bg-paper lg:grid lg:grid-cols-2">
+      <AnimatedBackground />
       {/* Left: what the app does, shown with a real flashcard */}
       <section className="hidden flex-col border-r border-line bg-accent-tint px-16 py-12 lg:flex xl:px-24">
         <Logo size={40} />
