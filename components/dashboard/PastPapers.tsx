@@ -20,6 +20,34 @@ type MyCourse = { code: string; title: string }
 const EXAM_TYPES = ["Final exam", "Mid-term", "Test", "Continuous assessment", "Supplementary", "Other"]
 const BUCKET = "past-papers"
 
+type UploadRow = {
+  id: string
+  file: File
+  code: string
+  title: string
+  year: string
+  type: string
+  status: "ready" | "uploading" | "done" | "error"
+  message?: string
+}
+
+// File names like "CS301_2024_Final.pdf", "cs 301 - 2023 mid-term.pdf" or
+// "MA101 Test 2 2022.pdf" fill in the course code, year and exam type.
+function guessFromFileName(fileName: string) {
+  const base = fileName.replace(/\.pdf$/i, "")
+  const codeMatch = base.match(/([A-Za-z]{2,5})[\s_-]?(\d{3,4})/)
+  const yearMatch = base.match(/(?:^|[^0-9])((?:19|20)\d{2})(?:[^0-9]|$)/)
+  const lower = base.toLowerCase()
+  let type = "Final exam"
+  if (/supp/.test(lower)) type = "Supplementary"
+  else if (/mid/.test(lower)) type = "Mid-term"
+  else if (/\bca\b|continuous|assessment/.test(lower)) type = "Continuous assessment"
+  else if (/test|quiz/.test(lower)) type = "Test"
+  else if (/final|exam/.test(lower)) type = "Final exam"
+  const code = codeMatch ? `${codeMatch[1].toUpperCase()}${codeMatch[2]}` : ""
+  return { code, year: yearMatch ? yearMatch[1] : String(new Date().getFullYear()), type }
+}
+
 // "CS 301" and "cs301" are the same course. Papers are stored in this form.
 function normalizeCode(code: string) {
   return code.toUpperCase().replace(/[^A-Z0-9]/g, "")
@@ -37,14 +65,10 @@ export default function PastPapers() {
   const [error, setError] = useState("")
   const [openingId, setOpeningId] = useState<string | null>(null)
 
-  // Admin form
+  // Admin upload: one or many PDFs, each with fields guessed from its file name.
   const [adding, setAdding] = useState(false)
-  const [code, setCode] = useState("")
-  const [title, setTitle] = useState("")
-  const [paperYear, setPaperYear] = useState(String(new Date().getFullYear()))
-  const [type, setType] = useState(EXAM_TYPES[0])
-  const [file, setFile] = useState<File | null>(null)
-  const [saving, setSaving] = useState(false)
+  const [rows, setRows] = useState<UploadRow[]>([])
+  const [uploading, setUploading] = useState(false)
 
   async function fetchAll() {
     const user = await getCurrentUser()
@@ -112,33 +136,68 @@ export default function PastPapers() {
     setOpeningId(null)
   }
 
-  async function savePaper() {
-    const norm = normalizeCode(code)
-    const yr = Number(paperYear)
-    if (!norm || !title.trim() || !file || !Number.isInteger(yr)) {
-      setError("Fill in the course code, title, year and choose a PDF.")
-      return
+  function addFiles(list: FileList | null) {
+    if (!list) return
+    const added: UploadRow[] = []
+    for (const file of Array.from(list)) {
+      if (file.type !== "application/pdf") continue
+      const guess = guessFromFileName(file.name)
+      added.push({
+        id: `${file.name}-${file.size}-${Math.random().toString(36).slice(2, 7)}`,
+        file,
+        code: guess.code,
+        title: guess.code ? `${guess.code} ${guess.type}` : file.name.replace(/\.pdf$/i, ""),
+        year: guess.year,
+        type: guess.type,
+        status: "ready",
+      })
     }
-    if (file.type !== "application/pdf") {
-      setError("Past papers must be PDF files.")
-      return
-    }
+    if (added.length < list.length) setError("Only PDF files were added.")
+    else setError("")
+    setRows((prev) => [...prev, ...added])
+  }
+
+  function updateRow(id: string, patch: Partial<UploadRow>) {
+    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)))
+  }
+
+  async function uploadAll() {
     setError("")
-    setSaving(true)
-    const path = `${norm}/${yr}-${Date.now()}.pdf`
-    const { error: upError } = await supabase.storage.from(BUCKET).upload(path, file, { contentType: "application/pdf" })
-    if (upError) { setError(upError.message); setSaving(false); return }
-    const { error: insError } = await supabase.from("past_papers").insert([
-      { course_code: norm, title: title.trim(), year: yr, exam_type: type, file_path: path },
-    ])
-    if (insError) {
-      await supabase.storage.from(BUCKET).remove([path])
-      setError(insError.message)
-      setSaving(false)
-      return
+    setUploading(true)
+    for (const row of rows) {
+      if (row.status === "done") continue
+      const norm = normalizeCode(row.code)
+      const yr = Number(row.year)
+      if (!norm || !row.title.trim() || !Number.isInteger(yr)) {
+        updateRow(row.id, { status: "error", message: "Needs a course code, title and year." })
+        continue
+      }
+      if (papers.some((p) => p.course_code === norm && p.year === yr && p.exam_type === row.type && p.title === row.title.trim())) {
+        updateRow(row.id, { status: "error", message: "Already added." })
+        continue
+      }
+      updateRow(row.id, { status: "uploading", message: undefined })
+      const path = `${norm}/${yr}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}.pdf`
+      const { error: upError } = await supabase.storage.from(BUCKET).upload(path, row.file, { contentType: "application/pdf" })
+      if (upError) { updateRow(row.id, { status: "error", message: upError.message }); continue }
+      const { error: insError } = await supabase.from("past_papers").insert([
+        { course_code: norm, title: row.title.trim(), year: yr, exam_type: row.type, file_path: path },
+      ])
+      if (insError) {
+        await supabase.storage.from(BUCKET).remove([path])
+        updateRow(row.id, { status: "error", message: insError.message })
+        continue
+      }
+      updateRow(row.id, { status: "done" })
     }
-    setCode(""); setTitle(""); setFile(null); setAdding(false); setSaving(false)
+    setUploading(false)
     fetchAll()
+  }
+
+  function closeUpload() {
+    setAdding(false)
+    setRows([])
+    setError("")
   }
 
   async function deletePaper(paper: Paper) {
@@ -167,7 +226,7 @@ export default function PastPapers() {
             onClick={() => setAdding(true)}
             className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-on-accent transition-colors hover:bg-accent-strong"
           >
-            <Plus size={16} aria-hidden="true" /> Add paper
+            <Plus size={16} aria-hidden="true" /> Add papers
           </button>
         )}
       </div>
@@ -181,50 +240,81 @@ export default function PastPapers() {
 
       {isAdmin && adding && (
         <div className={`${panel} mt-8 p-6`}>
-          <h2 className="mb-4 text-lg font-semibold text-ink">Add a past paper</h2>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label htmlFor="pp-code" className="mb-1.5 block text-sm font-medium text-ink">Course code</label>
-              <input id="pp-code" className={inputClass} placeholder="CS 301" value={code} onChange={(e) => setCode(e.target.value)} />
-            </div>
-            <div>
-              <label htmlFor="pp-title" className="mb-1.5 block text-sm font-medium text-ink">Title</label>
-              <input id="pp-title" className={inputClass} placeholder="Computer Networks" value={title} onChange={(e) => setTitle(e.target.value)} />
-            </div>
-            <div>
-              <label htmlFor="pp-year" className="mb-1.5 block text-sm font-medium text-ink">Year</label>
-              <input id="pp-year" type="number" className={inputClass} value={paperYear} onChange={(e) => setPaperYear(e.target.value)} />
-            </div>
-            <div>
-              <label htmlFor="pp-type" className="mb-1.5 block text-sm font-medium text-ink">Exam type</label>
-              <select id="pp-type" className={inputClass} value={type} onChange={(e) => setType(e.target.value)}>
-                {EXAM_TYPES.map((t) => <option key={t}>{t}</option>)}
-              </select>
-            </div>
-            <div className="sm:col-span-2">
-              <label htmlFor="pp-file" className="mb-1.5 block text-sm font-medium text-ink">PDF file</label>
-              <input
-                id="pp-file"
-                type="file"
-                accept="application/pdf"
-                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                className="block w-full text-sm text-ink-muted file:mr-3 file:rounded-lg file:border file:border-line file:bg-surface file:px-3 file:py-2 file:text-sm file:font-medium file:text-ink hover:file:bg-paper"
-              />
-            </div>
-          </div>
+          <h2 className="text-lg font-semibold text-ink">Add past papers</h2>
+          <p className="mt-1 text-sm text-ink-muted">
+            Choose one or many PDFs. Name them like <span className="font-medium text-ink">CS301_2024_Final.pdf</span> and
+            the course, year and exam type fill in by themselves. Check them before uploading.
+          </p>
+
+          <label
+            htmlFor="pp-files"
+            className="mt-4 flex cursor-pointer flex-col items-center rounded-lg border border-dashed border-line px-5 py-8 text-center transition-colors hover:border-accent hover:bg-accent-tint"
+          >
+            <FileText size={26} aria-hidden="true" className="text-ink-muted" />
+            <span className="mt-2 text-sm font-medium text-ink">Choose PDF files</span>
+            <span className="mt-0.5 text-xs text-ink-muted">You can select many at once</span>
+            <input
+              id="pp-files"
+              type="file"
+              accept="application/pdf"
+              multiple
+              className="sr-only"
+              onChange={(e) => { addFiles(e.target.files); e.target.value = "" }}
+            />
+          </label>
+
+          {rows.length > 0 && (
+            <ul className="mt-5 space-y-3">
+              {rows.map((row) => (
+                <li key={row.id} className="rounded-lg border border-line p-3.5">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="min-w-0 truncate text-xs text-ink-muted">{row.file.name}</p>
+                    <div className="flex shrink-0 items-center gap-2">
+                      {row.status === "done" && <span className="text-xs font-medium text-accent-strong">Uploaded</span>}
+                      {row.status === "uploading" && <span className="text-xs text-ink-muted">Uploading...</span>}
+                      {row.status === "error" && <span className="text-xs font-medium text-danger">{row.message}</span>}
+                      {row.status !== "uploading" && row.status !== "done" && (
+                        <button
+                          onClick={() => setRows((prev) => prev.filter((r) => r.id !== row.id))}
+                          aria-label={`Remove ${row.file.name}`}
+                          className="rounded p-1 text-ink-muted hover:text-danger"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="mt-2.5 grid gap-2.5 sm:grid-cols-[110px_1fr_90px_170px]">
+                    <input aria-label="Course code" className={inputClass} placeholder="CS301" value={row.code}
+                      disabled={row.status === "done" || uploading} onChange={(e) => updateRow(row.id, { code: e.target.value, status: "ready" })} />
+                    <input aria-label="Title" className={inputClass} placeholder="Title" value={row.title}
+                      disabled={row.status === "done" || uploading} onChange={(e) => updateRow(row.id, { title: e.target.value, status: "ready" })} />
+                    <input aria-label="Year" type="number" className={inputClass} value={row.year}
+                      disabled={row.status === "done" || uploading} onChange={(e) => updateRow(row.id, { year: e.target.value, status: "ready" })} />
+                    <select aria-label="Exam type" className={inputClass} value={row.type}
+                      disabled={row.status === "done" || uploading} onChange={(e) => updateRow(row.id, { type: e.target.value, status: "ready" })}>
+                      {EXAM_TYPES.map((t) => <option key={t}>{t}</option>)}
+                    </select>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+
           <div className="mt-5 flex gap-3">
             <button
-              onClick={() => { setAdding(false); setError("") }}
-              className="flex-1 rounded-lg border border-line bg-surface py-2.5 text-sm font-medium text-ink transition-colors hover:bg-paper"
+              onClick={closeUpload}
+              disabled={uploading}
+              className="flex-1 rounded-lg border border-line bg-surface py-2.5 text-sm font-medium text-ink transition-colors hover:bg-paper disabled:opacity-60"
             >
-              Cancel
+              {rows.some((r) => r.status === "done") ? "Done" : "Cancel"}
             </button>
             <button
-              onClick={savePaper}
-              disabled={saving}
+              onClick={uploadAll}
+              disabled={uploading || rows.every((r) => r.status === "done") || rows.length === 0}
               className="flex-1 rounded-lg bg-accent py-2.5 text-sm font-medium text-on-accent transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {saving ? "Uploading..." : "Save paper"}
+              {uploading ? "Uploading..." : `Upload ${rows.filter((r) => r.status !== "done").length || ""} ${rows.filter((r) => r.status !== "done").length === 1 ? "paper" : "papers"}`.replace("  ", " ")}
             </button>
           </div>
         </div>

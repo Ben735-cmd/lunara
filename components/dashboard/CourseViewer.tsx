@@ -6,6 +6,8 @@ import { CourseSkeleton, GeneratingSkeleton } from "../ui/Skeleton"
 import { AlertTriangle, ArrowLeft, Brain, Check, FileText, Layers, Lightbulb, Sparkles, X } from "lucide-react"
 import { supabase } from "../../lib/supabase"
 import { schedule, describeInterval, type Grade } from "../../lib/sm2"
+import { calculateProgress, MASTERED_INTERVAL_DAYS, type QuizAttempt } from "../../lib/progress"
+import { getCurrentUser } from "../../lib/auth"
 
 const RichText = dynamic(() => import("../ui/RichText"), { loading: () => <GeneratingSkeleton text="Formatting..." rows={3} /> })
 
@@ -43,9 +45,7 @@ type Flashcard = {
 
 export default function CourseViewer({ courseId, onBack }: Props) {
   const [course, setCourse] = useState<Course | null>(null)
-  const [progress, setProgress] = useState(0)
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
+  const [attempts, setAttempts] = useState<QuizAttempt[]>([])
   const [activeTab, setActiveTab] = useState<Tab>("content")
 
   const [summary, setSummary] = useState("")
@@ -77,9 +77,30 @@ export default function CourseViewer({ courseId, onBack }: Props) {
       .select("*")
       .eq("id", courseId)
       .single()
-    if (data) {
-      setCourse(data)
-      setProgress(data.progress)
+    if (data) setCourse(data)
+  }
+
+  async function fetchAttempts() {
+    const { data } = await supabase
+      .from("quiz_attempts")
+      .select("score, total, created_at")
+      .eq("course_id", courseId)
+      .order("created_at", { ascending: false })
+      .limit(10)
+    setAttempts((data ?? []) as QuizAttempt[])
+  }
+
+  // Quiz results count towards progress. The score is also shown to the student
+  // right away, so a failed save never blocks the quiz.
+  async function submitQuiz() {
+    setQuizSubmitted(true)
+    const score = quiz.filter((q, i) => quizAnswers[i] === q.answer).length
+    const user = await getCurrentUser()
+    if (!user) return
+    const attempt = { course_id: courseId, user_id: user.id, score, total: quiz.length }
+    const { error } = await supabase.from("quiz_attempts").insert([attempt])
+    if (!error) {
+      setAttempts(prev => [{ score, total: quiz.length, created_at: new Date().toISOString() }, ...prev])
     }
   }
 
@@ -130,17 +151,10 @@ export default function CourseViewer({ courseId, onBack }: Props) {
     setActiveTab("content")
     setShowAnswer(false)
     fetchCourse()
+    setAttempts([])
     fetchFlashcards()
+    fetchAttempts()
   }, [courseId])
-
-  async function saveProgress(value: number) {
-    setSaving(true)
-    setSaved(false)
-    await supabase.from("courses").update({ progress: value }).eq("id", courseId)
-    setSaving(false)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
-  }
 
   async function callAI(prompt: string): Promise<string> {
     try {
@@ -316,6 +330,10 @@ export default function CourseViewer({ courseId, onBack }: Props) {
     { id: "flashcards", label: "Flashcards", Icon: Layers },
     { id: "explain", label: "Explain", Icon: Lightbulb },
   ]
+
+  // Recalculated on every render, so it moves as soon as a card is graded or a quiz is submitted.
+  const breakdown = calculateProgress(flashcards, attempts)
+  const progress = breakdown.progress
 
   const status = progress === 100
     ? { className: "bg-accent text-on-accent", subClassName: "text-on-accent/80", label: "Complete", sub: "You have finished this course." }
@@ -519,7 +537,7 @@ export default function CourseViewer({ courseId, onBack }: Props) {
 
                     {!quizSubmitted ? (
                       <button
-                        onClick={() => setQuizSubmitted(true)}
+                        onClick={submitQuiz}
                         disabled={Object.keys(quizAnswers).length < quiz.length}
                         className="w-full rounded-lg bg-accent py-3 text-sm font-medium text-on-accent transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-50"
                       >
@@ -726,7 +744,7 @@ export default function CourseViewer({ courseId, onBack }: Props) {
         <div className="flex flex-col gap-4">
           <div className={`${panel} p-6`}>
             <h2 className="text-lg font-semibold text-ink">Study progress</h2>
-            <p className="mb-5 mt-0.5 text-sm text-ink-muted">Drag to update your progress</p>
+            <p className="mb-5 mt-0.5 text-sm text-ink-muted">Updates automatically from your flashcards and quizzes</p>
 
             <p className="mb-4 text-center text-5xl font-semibold tabular-nums text-ink">{progress}%</p>
 
@@ -736,31 +754,41 @@ export default function CourseViewer({ courseId, onBack }: Props) {
               aria-valuemin={0}
               aria-valuemax={100}
               aria-label="Course progress"
-              className="mb-4 h-1.5 w-full overflow-hidden rounded-full bg-line"
+              className="mb-6 h-1.5 w-full overflow-hidden rounded-full bg-line"
             >
-              <div className="h-full rounded-full bg-accent transition-[width] duration-300" style={{ width: `${progress}%` }} />
+              <div className="h-full rounded-full bg-accent transition-[width] duration-500" style={{ width: `${progress}%` }} />
             </div>
 
-            <label htmlFor="progress-range" className="sr-only">Set progress</label>
-            <input
-              id="progress-range"
-              type="range" min={0} max={100} step={5}
-              value={progress}
-              onChange={(e) => setProgress(Number(e.target.value))}
-              className="mb-2 w-full accent-accent"
-            />
-
-            <div className="mb-5 flex justify-between text-xs text-ink-muted" aria-hidden="true">
-              <span>0%</span><span>50%</span><span>100%</span>
-            </div>
-
-            <button
-              onClick={() => saveProgress(progress)}
-              disabled={saving}
-              className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-accent py-2.5 text-sm font-medium text-on-accent transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {saving ? "Saving..." : saved ? <><Check size={16} aria-hidden="true" /> Saved</> : "Save progress"}
-            </button>
+            <dl className="space-y-4 text-sm">
+              <div>
+                <div className="flex items-baseline justify-between">
+                  <dt className="font-medium text-ink">Flashcards</dt>
+                  <dd className="tabular-nums text-ink-muted">{breakdown.flashcards.percent}%</dd>
+                </div>
+                <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-line">
+                  <div className="h-full rounded-full bg-accent transition-[width] duration-500" style={{ width: `${breakdown.flashcards.percent}%` }} />
+                </div>
+                <p className="mt-1.5 text-xs text-ink-muted">
+                  {breakdown.flashcards.cards === 0
+                    ? "Create flashcards and review them over several days."
+                    : `${breakdown.flashcards.mastered} of ${breakdown.flashcards.cards} cards remembered for ${MASTERED_INTERVAL_DAYS}+ days`}
+                </p>
+              </div>
+              <div>
+                <div className="flex items-baseline justify-between">
+                  <dt className="font-medium text-ink">Quizzes</dt>
+                  <dd className="tabular-nums text-ink-muted">{breakdown.quizzes.percent}%</dd>
+                </div>
+                <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-line">
+                  <div className="h-full rounded-full bg-accent transition-[width] duration-500" style={{ width: `${breakdown.quizzes.percent}%` }} />
+                </div>
+                <p className="mt-1.5 text-xs text-ink-muted">
+                  {breakdown.quizzes.attempts === 0
+                    ? "Take quizzes to build this up. Three or more count fully."
+                    : `Average ${breakdown.quizzes.average}% over your last ${breakdown.quizzes.attempts} ${breakdown.quizzes.attempts === 1 ? "quiz" : "quizzes"}`}
+                </p>
+              </div>
+            </dl>
           </div>
 
           {/* Status */}

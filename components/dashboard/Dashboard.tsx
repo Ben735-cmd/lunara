@@ -5,6 +5,7 @@ import dynamic from "next/dynamic"
 import { BookOpen, ClipboardList, Flame, Search, Trash2, TrendingUp, X } from "lucide-react"
 import { supabase } from "../../lib/supabase"
 import { getCurrentUser } from "../../lib/auth"
+import { calculateProgress, type QuizAttempt } from "../../lib/progress"
 import Sidebar from "../layout/Sidebar"
 import AddCourseModal from "./AddCourseModal"
 import AddAssignmentModal from "./AddAssignmentModal"
@@ -79,7 +80,22 @@ export default function Dashboard({ email, logout }: Props) {
       showToast("Couldn't load your courses. Please try again.")
       return
     }
-    setCourses(data || [])
+    // Progress is calculated from flashcard reviews and quiz results, never typed in.
+    const [cardsRes, attemptsRes] = await Promise.all([
+      supabase.from("flashcards").select("course_id, interval_days").eq("user_id", user.id),
+      supabase.from("quiz_attempts").select("course_id, score, total, created_at").eq("user_id", user.id),
+    ])
+    const cards = (cardsRes.data ?? []) as { course_id: string; interval_days: number }[]
+    const attempts = (attemptsRes.data ?? []) as (QuizAttempt & { course_id: string })[]
+    setCourses(
+      (data || []).map((c: Course) => ({
+        ...c,
+        progress: calculateProgress(
+          cards.filter((x) => x.course_id === c.id),
+          attempts.filter((x) => x.course_id === c.id)
+        ).progress,
+      }))
+    )
   }
 
   async function fetchAssignments() {
@@ -102,16 +118,6 @@ export default function Dashboard({ email, logout }: Props) {
     }
     loadInitialData()
   }, [])
-
-  async function increaseProgress(id: string, progress: number) {
-    const { error } = await supabase.from("courses").update({ progress: progress + 10 }).eq("id", id)
-    if (error) {
-      console.error(error)
-      showToast("Couldn't update progress. Please try again.")
-      return
-    }
-    fetchCourses()
-  }
 
   async function deleteCourse(id: string) {
     const { error } = await supabase.from("courses").delete().eq("id", id)
@@ -343,12 +349,6 @@ export default function Dashboard({ email, logout }: Props) {
                         />
                       </div>
                       <span className="w-10 text-right text-sm tabular-nums text-ink-muted">{course.progress}%</span>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); increaseProgress(course.id, course.progress) }}
-                        className={smallButton}
-                      >
-                        Add 10%
-                      </button>
                     </div>
                   </div>
                 )) : (

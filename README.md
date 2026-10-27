@@ -47,7 +47,7 @@ GROQ_API_KEY=your-groq-api-key
 
 ### 3. Set up the database
 
-Create a Supabase project, then run the SQL in the Supabase SQL editor. `supabase/flashcards.sql` creates the flashcards table with Row Level Security policies. `supabase/past_papers.sql` creates the past papers table, a private `past-papers` storage bucket and an `admins` table (see the comments in the file for adding yourself as admin). The app also expects `courses`, `assignments`, `notes`, `profiles` and `study_sessions` tables, plus an `avatars` storage bucket, each restricted to the owning user with Row Level Security.
+Create a Supabase project, then run the SQL in the Supabase SQL editor. `supabase/flashcards.sql` creates the flashcards table with Row Level Security policies. `supabase/quiz_attempts.sql` stores quiz results, which feed the automatic course progress (flashcard mastery 55%, quiz scores 45%; see `lib/progress.ts`). `supabase/past_papers.sql` creates the past papers table, a private `past-papers` storage bucket and an `admins` table (see the comments in the file for adding yourself as admin). The app also expects `courses`, `assignments`, `notes`, `profiles` and `study_sessions` tables, plus an `avatars` storage bucket, each restricted to the owning user with Row Level Security.
 
 ### 4. Run the dev server
 
