@@ -40,6 +40,9 @@ Create a `.env.local` file in the project root:
 NEXT_PUBLIC_SUPABASE_URL=your-supabase-project-url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
 GROQ_API_KEY=your-groq-api-key
+# Optional: override the Groq models (comma separated, best first)
+# GROQ_TEXT_MODELS=openai/gpt-oss-120b,qwen/qwen3.6-27b
+# GROQ_VISION_MODELS=qwen/qwen3.8-27b,qwen/qwen3.6-27b
 ```
 
 ### 3. Set up the database

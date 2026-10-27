@@ -42,8 +42,9 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ error: "Unsupported file type" }, { status: 400 })
-  } catch (err: any) {
-    console.error("Extract error:", err.message)
-    return NextResponse.json({ error: err.message }, { status: 500 })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Could not read this file."
+    console.error("Extract error:", message)
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }

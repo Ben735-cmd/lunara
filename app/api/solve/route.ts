@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import mammoth from "mammoth"
-import { extractText } from "unpdf"
+import { askText, askVision } from "../../../lib/groq"
 
 function sanitizeText(text: string): string {
   return text
@@ -11,15 +11,10 @@ function sanitizeText(text: string): string {
 }
 
 async function solveWithGroq(questionText: string): Promise<string> {
-  const Groq = (await import("groq-sdk")).default
-  const client = new Groq({ apiKey: process.env.GROQ_API_KEY })
-
-  const completion = await client.chat.completions.create({
-    model: "llama-3.3-70b-versatile",
-    messages: [
-      {
-        role: "system",
-        content: `You are an expert tutor and problem solver. When given a question or problem:
+  return askText([
+    {
+      role: "system",
+      content: `You are an expert tutor and problem solver. When given a question or problem:
 1. Analyze what is being asked
 2. Provide a clear step-by-step solution
 3. State the final answer clearly at the end
@@ -33,16 +28,9 @@ Format your response as:
 
 ## Final Answer
 [clear final answer]`,
-      },
-      {
-        role: "user",
-        content: `Please solve this:\n\n${questionText}`,
-      },
-    ],
-    max_tokens: 2048,
-  })
-
-  return completion.choices[0]?.message?.content || "Could not generate solution."
+    },
+    { role: "user", content: `Please solve this:\n\n${questionText}` },
+  ])
 }
 
 export async function POST(req: NextRequest) {
@@ -77,22 +65,17 @@ export async function POST(req: NextRequest) {
       const base64 = buffer.toString("base64")
       const mimeType = file.type
 
-      const Groq = (await import("groq-sdk")).default
-      const client = new Groq({ apiKey: process.env.GROQ_API_KEY })
-
-      const completion = await client.chat.completions.create({
-        model: "meta-llama/llama-4-scout-17b-16e-instruct",
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "image_url",
-                image_url: { url: `data:${mimeType};base64,${base64}` },
-              },
-              {
-                type: "text",
-                text: `Please solve the question(s) in this image. Provide:
+      const visionAnswer = await askVision([
+        {
+          role: "user",
+          content: [
+            {
+              type: "image_url",
+              image_url: { url: `data:${mimeType};base64,${base64}` },
+            },
+            {
+              type: "text",
+              text: `Please solve the question(s) in this image. Provide:
 1. A clear step-by-step solution
 2. The final answer
 
@@ -105,16 +88,12 @@ Format as:
 
 ## Final Answer
 [clear final answer]`,
-              },
-            ],
-          },
-        ],
-        max_tokens: 2048,
-      })
+            },
+          ],
+        },
+      ])
 
-      const solution = sanitizeText(
-        completion.choices[0]?.message?.content || "Could not read image."
-      )
+      const solution = sanitizeText(visionAnswer || "Could not read image.")
       return NextResponse.json({ solution })
     }
 
@@ -129,8 +108,11 @@ Format as:
     const solution = await solveWithGroq(questionText)
     return NextResponse.json({ solution, extractedText: questionText })
 
-  } catch (err: any) {
-    console.error("Solve error:", err.message)
-    return NextResponse.json({ error: err.message }, { status: 500 })
+  } catch (err) {
+    console.error("Solve error:", err instanceof Error ? err.message : err)
+    return NextResponse.json(
+      { error: "The solver is temporarily unavailable. Please try again in a moment." },
+      { status: 502 }
+    )
   }
 }

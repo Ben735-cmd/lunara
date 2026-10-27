@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
-import Groq from "groq-sdk"
+import { askText } from "../../../lib/groq"
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -43,22 +43,14 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const client = new Groq({ apiKey: process.env.GROQ_API_KEY })
-
-    const completion = await client.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a helpful AI study assistant for university students. Help them with their studies, assignments, and learning.",
-        },
-        { role: "user", content: prompt },
-      ],
-      max_tokens: 4096,
-    })
-
-    const text = completion.choices[0]?.message?.content || "No response received."
+    const text = await askText([
+      {
+        role: "system",
+        content:
+          "You are a helpful AI study assistant for university students. Help them with their studies, assignments, and learning.",
+      },
+      { role: "user", content: prompt },
+    ])
 
     return NextResponse.json({ response: text })
   } catch (err) {
