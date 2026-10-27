@@ -58,6 +58,23 @@ export default function AuthForm() {
     setLoading(false)
   }
 
+  async function forgotPassword() {
+    if (!email) {
+      setNotice({ kind: "error", text: "Enter your email above, then choose Forgot password." })
+      return
+    }
+    setLoading(true)
+    setNotice(null)
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin })
+    if (error) {
+      setNotice({ kind: "error", text: error.message })
+    } else {
+      // Same message whether or not the email has an account, so nobody can use this to find out who is registered.
+      setNotice({ kind: "success", text: "If an account exists for that email, we have sent a link to reset the password." })
+    }
+    setLoading(false)
+  }
+
   async function signInWithGoogle() {
     setGoogleLoading(true)
     const { error } = await supabase.auth.signInWithOAuth({
@@ -157,7 +174,17 @@ export default function AuthForm() {
             </div>
 
             <div>
-              <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-ink">Password</label>
+              <div className="mb-1.5 flex items-center justify-between">
+                <label htmlFor="password" className="block text-sm font-medium text-ink">Password</label>
+                <button
+                  type="button"
+                  onClick={forgotPassword}
+                  disabled={loading}
+                  className="text-sm font-medium text-accent-strong underline-offset-2 hover:underline disabled:opacity-60"
+                >
+                  Forgot password?
+                </button>
+              </div>
               <input
                 id="password"
                 type="password"
