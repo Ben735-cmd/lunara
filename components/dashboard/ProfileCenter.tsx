@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import { Bell, Check, ChevronDown, Lock, Mail, Moon, Settings, Sun, User } from "lucide-react"
 import { supabase } from "../../lib/supabase"
+import { getCurrentUser } from "../../lib/auth"
 
 type Profile = {
   id?: string
@@ -96,7 +97,7 @@ export default function ProfileCenter({ email, onThemeChange, isDark, onStreakUp
   }
 
   async function fetchProfile() {
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getCurrentUser()
     if (!user) return
 
     const { data } = await supabase
@@ -142,7 +143,7 @@ export default function ProfileCenter({ email, onThemeChange, isDark, onStreakUp
   }, [])
 
   async function saveProfile() {
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getCurrentUser()
     if (!user) return
     setSaving(true)
     await supabase.from("profiles").upsert({
@@ -162,7 +163,7 @@ export default function ProfileCenter({ email, onThemeChange, isDark, onStreakUp
   async function toggleDarkMode() {
     const newVal = !isDark
     onThemeChange(newVal)
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getCurrentUser()
     if (!user) return
     await supabase.from("profiles").upsert({
       user_id: user.id,
@@ -177,7 +178,7 @@ export default function ProfileCenter({ email, onThemeChange, isDark, onStreakUp
   async function toggleNotifications() {
     const newVal = !notifications
     setNotifications(newVal)
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getCurrentUser()
     if (!user) return
     await supabase.from("profiles").upsert({
       user_id: user.id,
@@ -200,7 +201,7 @@ export default function ProfileCenter({ email, onThemeChange, isDark, onStreakUp
   }
 
   async function uploadAvatar(file: File) {
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getCurrentUser()
     if (!user) return
     setUploading(true)
     const fileExt = file.name.split(".").pop()

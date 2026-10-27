@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { CalendarDays, ChevronLeft, ChevronRight, Plus, Trash2 } from "lucide-react"
 import { supabase } from "../../lib/supabase"
+import { getCurrentUser } from "../../lib/auth"
 import { CalendarSkeleton } from "../ui/Skeleton"
 
 type Assignment = {
@@ -40,7 +41,7 @@ export default function Calendar() {
   const [selectedDay, setSelectedDay] = useState<string | null>(null)
 
   async function fetchData() {
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getCurrentUser()
     if (!user) { setLoaded(true); return }
     setUserId(user.id)
 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { AlertTriangle, CalendarCheck, Check, ClipboardList, Plus, Search, Trash2 } from "lucide-react"
 import { supabase } from "../../lib/supabase"
+import { getCurrentUser } from "../../lib/auth"
 import { AssignmentsSkeleton } from "../ui/Skeleton"
 
 type Assignment = {
@@ -24,7 +25,7 @@ export default function Assignments() {
   const [searchQuery, setSearchQuery] = useState("")
 
   async function fetchAssignments() {
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getCurrentUser()
     if (!user) { setLoaded(true); return }
     setUserId(user.id)
     const { data } = await supabase

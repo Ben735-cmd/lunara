@@ -1,19 +1,31 @@
 "use client"
 import AITest from "../ai/AITest"
 import { useEffect, useState } from "react"
+import dynamic from "next/dynamic"
 import { BookOpen, ClipboardList, Flame, Search, Trash2, TrendingUp, X } from "lucide-react"
 import { supabase } from "../../lib/supabase"
+import { getCurrentUser } from "../../lib/auth"
 import Sidebar from "../layout/Sidebar"
 import AddCourseModal from "./AddCourseModal"
 import AddAssignmentModal from "./AddAssignmentModal"
-import CourseViewer from "./CourseViewer"
-import Notes from "./Notes"
-import Calendar from "./Calendar"
-import QuestionSolver from "./QuestionSolver"
-import PastPapers from "./PastPapers"
-import Assignments from "./Assignments"
 import ProfileCenter from "./ProfileCenter"
-import { DashboardLoading } from "../ui/Skeleton"
+import {
+  AssignmentsSkeleton,
+  CalendarSkeleton,
+  CourseSkeleton,
+  DashboardLoading,
+  NotesSkeleton,
+  PapersSkeleton,
+} from "../ui/Skeleton"
+
+// Each screen is loaded the first time it is opened, not up front, so the
+// first page load only downloads what the dashboard home needs.
+const CourseViewer = dynamic(() => import("./CourseViewer"), { loading: () => <CourseSkeleton /> })
+const Notes = dynamic(() => import("./Notes"), { loading: () => <NotesSkeleton /> })
+const Calendar = dynamic(() => import("./Calendar"), { loading: () => <CalendarSkeleton /> })
+const Assignments = dynamic(() => import("./Assignments"), { loading: () => <AssignmentsSkeleton /> })
+const PastPapers = dynamic(() => import("./PastPapers"), { loading: () => <PapersSkeleton /> })
+const QuestionSolver = dynamic(() => import("./QuestionSolver"))
 
 type Props = {
   email: string
@@ -57,7 +69,7 @@ export default function Dashboard({ email, logout }: Props) {
   }, [toast])
 
   async function fetchCourses() {
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getCurrentUser()
     if (!user) return
     setUserId(user.id)
     const { data, error } = await supabase.from("courses").select("*").eq("user_id", user.id)
@@ -70,7 +82,7 @@ export default function Dashboard({ email, logout }: Props) {
   }
 
   async function fetchAssignments() {
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getCurrentUser()
     if (!user) return
     const { data, error } = await supabase.from("assignments").select("*").eq("user_id", user.id)
     if (error) {

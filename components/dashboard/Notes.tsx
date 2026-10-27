@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { Plus, Trash2 } from "lucide-react"
 import { supabase } from "../../lib/supabase"
+import { getCurrentUser } from "../../lib/auth"
 import { NotesSkeleton } from "../ui/Skeleton"
 
 type Note = {
@@ -23,7 +24,7 @@ export default function Notes() {
   const [selectedNote, setSelectedNote] = useState<Note | null>(null)
 
   async function fetchNotes() {
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getCurrentUser()
     if (!user) { setLoaded(true); return }
     setUserId(user.id)
     const { data } = await supabase

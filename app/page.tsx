@@ -2,9 +2,13 @@
 
 import { useEffect, useState } from "react"
 import { supabase } from "../lib/supabase"
-import AuthForm from "../components/auth/AuthForm"
-import Dashboard from "../components/dashboard/Dashboard"
+import dynamic from "next/dynamic"
 import { AppSkeleton } from "../components/ui/Skeleton"
+
+// Signed-out visitors never download the dashboard, and signed-in users never
+// download the sign-in screen.
+const AuthForm = dynamic(() => import("../components/auth/AuthForm"), { loading: () => <AppSkeleton /> })
+const Dashboard = dynamic(() => import("../components/dashboard/Dashboard"), { loading: () => <AppSkeleton /> })
 
 export default function Page() {
   const [email, setEmail] = useState<string | null>(null)

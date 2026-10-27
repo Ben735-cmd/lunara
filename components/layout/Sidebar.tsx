@@ -17,6 +17,7 @@ import {
   type LucideIcon,
 } from "lucide-react"
 import { supabase } from "../../lib/supabase"
+import { getCurrentUser } from "../../lib/auth"
 import Logo from "../ui/Logo"
 
 type Course = {
@@ -51,7 +52,7 @@ export default function Sidebar({ logout, onSelectCourse, selectedCourseId, acti
   const [mobileOpen, setMobileOpen] = useState(false)
 
   async function fetchCourses() {
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getCurrentUser()
     if (!user) { setCoursesLoaded(true); return }
     const { data } = await supabase
       .from("courses")

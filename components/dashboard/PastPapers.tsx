@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { AlertTriangle, ExternalLink, FileText, Plus, Search, Trash2 } from "lucide-react"
 import { supabase } from "../../lib/supabase"
+import { getCurrentUser } from "../../lib/auth"
 import { PapersSkeleton } from "../ui/Skeleton"
 
 type Paper = {
@@ -46,7 +47,7 @@ export default function PastPapers() {
   const [saving, setSaving] = useState(false)
 
   async function fetchAll() {
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getCurrentUser()
     if (!user) { setLoaded(true); return }
 
     const [coursesRes, adminRes, papersRes] = await Promise.all([
