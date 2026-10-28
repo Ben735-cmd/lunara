@@ -6,7 +6,7 @@
 //   cache when offline.
 // - API calls, Supabase and ads are never cached, so user data and signed-in
 //   responses are not stored by the service worker.
-const CACHE_NAME = "lunara-v2"
+const CACHE_NAME = "lunara-v3"
 const STATIC_ASSETS = ["/", "/manifest.json", "/logo-mark.png"]
 
 self.addEventListener("install", (event) => {
