@@ -21,13 +21,9 @@ export function storeTheme(dark: boolean) {
   }
 }
 
-export function systemPrefersDark() {
-  return typeof window !== "undefined" && !!window.matchMedia?.("(prefers-color-scheme: dark)").matches
-}
-
-/** The saved choice, or the device's own light/dark setting if nothing is saved yet. */
+/** The saved choice, or light mode if nothing is saved yet. */
 export function initialTheme() {
-  return getStoredTheme() ?? systemPrefersDark()
+  return getStoredTheme() ?? false
 }
 
 export function getStoredNotifications(): boolean | null {

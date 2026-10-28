@@ -37,7 +37,7 @@ export default function RootLayout({
         {/* Apply the saved light/dark choice before the page paints, so there is no flash. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{var t=localStorage.getItem('lunara-theme');var d=t?t==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;if(d)document.documentElement.classList.add('dark')}catch(e){}`,
+            __html: `try{var t=localStorage.getItem('lunara-theme');if(t==='dark')document.documentElement.classList.add('dark')}catch(e){}`,
           }}
         />
         <link rel="manifest" href="/manifest.json" />
