@@ -87,7 +87,7 @@ export default function Dashboard({ email, logout }: Props) {
     // Progress is calculated from flashcard reviews and quiz results, never typed in.
     // All three queries go out together so loading costs one round trip, not three.
     const [coursesRes, cardsRes, attemptsRes] = await Promise.all([
-      supabase.from("courses").select("*").eq("user_id", user.id),
+      supabase.from("courses").select("id, title, code, progress").eq("user_id", user.id),
       supabase.from("flashcards").select("course_id, interval_days").eq("user_id", user.id),
       supabase.from("quiz_attempts").select("course_id, score, total, created_at").eq("user_id", user.id),
     ])
