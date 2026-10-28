@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import dynamic from "next/dynamic"
 import { CourseSkeleton, GeneratingSkeleton } from "../ui/Skeleton"
 import { AlertTriangle, ArrowLeft, Brain, Check, FileText, Layers, Lightbulb, Sparkles, X } from "lucide-react"
@@ -8,6 +8,7 @@ import { supabase } from "../../lib/supabase"
 import { schedule, describeInterval, type Grade } from "../../lib/sm2"
 import { calculateProgress, MASTERED_INTERVAL_DAYS, type QuizAttempt } from "../../lib/progress"
 import { getCurrentUser } from "../../lib/auth"
+import { structureContent } from "../../lib/formatContent"
 
 const RichText = dynamic(() => import("../ui/RichText"), { loading: () => <GeneratingSkeleton text="Formatting..." rows={3} /> })
 
@@ -395,54 +396,7 @@ export default function CourseViewer({ courseId, onBack }: Props) {
             {activeTab === "content" && (
               course.content ? (
                 <div className="max-h-[65vh] overflow-y-auto pr-2">
-                  {(() => {
-                    const cleaned = course.content
-                      .replace(/\s*[■□●◆▪]\s*/g, "\n• ")
-                      .replace(/\n{3,}/g, "\n\n")
-                      .trim()
-
-                    const sentences = cleaned.split(/(?<=[.!?])\s+/)
-                    const paragraphs: string[] = []
-                    let current = ""
-
-                    sentences.forEach((sentence) => {
-                      current += (current ? " " : "") + sentence
-                      if (current.length > 300) {
-                        paragraphs.push(current.trim())
-                        current = ""
-                      }
-                    })
-                    if (current.trim()) paragraphs.push(current.trim())
-
-                    return paragraphs.map((block, i) => {
-                      const trimmed = block.trim()
-                      if (!trimmed) return null
-
-                      const isChapter = /^Chapter\s+\d+\b/i.test(trimmed) && trimmed.length < 80
-                      const isBullet = trimmed.startsWith("•")
-
-                      if (isChapter) {
-                        return (
-                          <h3 key={i} className={`mb-2.5 text-base font-semibold text-accent-strong ${i === 0 ? "" : "mt-6"}`}>
-                            {trimmed}
-                          </h3>
-                        )
-                      }
-
-                      if (isBullet) {
-                        return (
-                          <div key={i} className="mb-2 flex items-start gap-2.5">
-                            <span aria-hidden="true" className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
-                            <p className="text-sm leading-relaxed text-ink">{trimmed.replace(/^•\s*/, "")}</p>
-                          </div>
-                        )
-                      }
-
-                      return (
-                        <p key={i} className="mb-3.5 text-sm leading-relaxed text-ink">{trimmed}</p>
-                      )
-                    })
-                  })()}
+                  <ContentBody content={course.content} />
                 </div>
               ) : (
                 <EmptyState
@@ -831,4 +785,11 @@ function EmptyState({ title, hint }: { title: string; hint: string }) {
       <p className="mt-1.5 text-sm text-ink-muted">{hint}</p>
     </div>
   )
+}
+
+// The uploaded document as headings, lists and paragraphs. Built once per
+// document, since structuring a long course takes a moment.
+function ContentBody({ content }: { content: string }) {
+  const markdown = useMemo(() => structureContent(content), [content])
+  return <RichText>{markdown}</RichText>
 }

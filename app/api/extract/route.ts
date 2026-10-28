@@ -37,8 +37,11 @@ export async function POST(req: NextRequest) {
     }
 
     if (file.name.endsWith(".pdf")) {
-      const { text } = await extractText(new Uint8Array(buffer), { mergePages: true })
-      return NextResponse.json({ text: formatExtractedText(text) })
+      // Keep page (slide) boundaries: a form feed between pages lets the course
+      // viewer turn each slide into its own heading and list.
+      const { text } = await extractText(new Uint8Array(buffer), { mergePages: false })
+      const pages = text.map(formatExtractedText).filter(Boolean)
+      return NextResponse.json({ text: pages.join("\f") })
     }
 
     return NextResponse.json({ error: "Unsupported file type" }, { status: 400 })
