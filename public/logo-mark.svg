@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="38%" r="75%">
+      <stop offset="0" stop-color="#0f4a37"/><stop offset="0.55" stop-color="#082a1f"/><stop offset="1" stop-color="#03130d"/>
+    </radialGradient>
+    <linearGradient id="moon" x1="0.15" y1="0" x2="0.85" y2="1">
+      <stop offset="0" stop-color="#f2fffb"/><stop offset="0.45" stop-color="#9ff0d4"/><stop offset="1" stop-color="#27ad82"/>
+    </linearGradient>
+    <mask id="cres" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024">
+      <rect width="1024" height="1024" fill="#000"/>
+      <circle cx="470" cy="512" r="300" fill="#fff"/>
+      <circle cx="600" cy="452" r="262" fill="#000"/>
+    </mask>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="70"/></filter>
+    <filter id="sglow" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="10"/></filter>
+    <path id="spark" d="M0,-1 C0.07,-0.25 0.25,-0.07 1,0 C0.25,0.07 0.07,0.25 0,1 C-0.07,0.25 -0.25,0.07 -1,0 C-0.25,-0.07 -0.07,-0.25 0,-1 Z"/>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <circle cx="512" cy="540" r="320" fill="#25a47a" opacity="0.38" filter="url(#glow)"/>
+  <g mask="url(#cres)"><rect width="1024" height="1024" fill="url(#moon)"/></g>
+  <use href="#spark" transform="translate(640 500) scale(120 190)" fill="#7ef0cb" opacity="0.55" filter="url(#sglow)"/>
+  <use href="#spark" transform="translate(640 500) scale(112 178)" fill="#ffffff"/>
+  <use href="#spark" transform="translate(790 330) scale(34 46)" fill="#eafff8"/>
+  <use href="#spark" transform="translate(760 700) scale(30 40)" fill="#eafff8"/>
+  <use href="#spark" transform="translate(470 330) scale(24 30)" fill="#eafff8" opacity="0.9"/>
+  <circle cx="860" cy="560" r="7" fill="#cffff0" opacity="0.8"/>
+  <circle cx="395" cy="250" r="6" fill="#cffff0" opacity="0.7"/>
+</svg>
