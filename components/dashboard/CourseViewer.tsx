@@ -9,6 +9,7 @@ import { schedule, describeInterval, type Grade } from "../../lib/sm2"
 import { calculateProgress, MASTERED_INTERVAL_DAYS, type QuizAttempt } from "../../lib/progress"
 import { getCurrentUser } from "../../lib/auth"
 import { structureContent } from "../../lib/formatContent"
+import { imagePaths, plainContent, resolveImages } from "../../lib/courseImages"
 
 const RichText = dynamic(() => import("../ui/RichText"), { loading: () => <GeneratingSkeleton text="Formatting..." rows={3} /> })
 
@@ -205,7 +206,7 @@ export default function CourseViewer({ courseId, onBack }: Props) {
     setSummaryError("")
     try {
       const result = await callAI(
-        `Summarize the following course content in a clear, structured way with key points and main takeaways. Use bullet points where appropriate.\n\nCourse: ${course.title}\n\nContent:\n${course.content.slice(0, 5000)}`
+        `Summarize the following course content in a clear, structured way with key points and main takeaways. Use bullet points where appropriate.\n\nCourse: ${course.title}\n\nContent:\n${plainContent(course.content).slice(0, 5000)}`
       )
       setSummary(result)
     } catch (err: unknown) {
@@ -229,7 +230,7 @@ export default function CourseViewer({ courseId, onBack }: Props) {
       [{"question":"...","options":["A) ...","B) ...","C) ...","D) ..."],"answer":"A) ..."}]
       
       Course: ${course.title}
-      Content: ${course.content.slice(0, 4000)}`
+      Content: ${plainContent(course.content).slice(0, 4000)}`
       )
       try {
         const cleaned = result.replace(/```json|```/g, "").trim()
@@ -261,7 +262,7 @@ export default function CourseViewer({ courseId, onBack }: Props) {
       [{"front":"term or question","back":"definition or answer"}]
       
       Course: ${course.title}
-      Content: ${course.content.slice(0, 4000)}`
+      Content: ${plainContent(course.content).slice(0, 4000)}`
       )
       try {
         const cleaned = result.replace(/```json|```/g, "").trim()
@@ -791,5 +792,20 @@ function EmptyState({ title, hint }: { title: string; hint: string }) {
 // document, since structuring a long course takes a moment.
 function ContentBody({ content }: { content: string }) {
   const markdown = useMemo(() => structureContent(content), [content])
-  return <RichText>{markdown}</RichText>
+  // Pictures are private, so each one needs a short-lived signed link first.
+  const [resolved, setResolved] = useState<{ source: string; text: string } | null>(null)
+  const hasPictures = useMemo(() => imagePaths(markdown).length > 0, [markdown])
+
+  useEffect(() => {
+    if (!hasPictures) return
+    let cancelled = false
+    resolveImages(markdown).then((text) => {
+      if (!cancelled) setResolved({ source: markdown, text })
+    })
+    return () => { cancelled = true }
+  }, [markdown, hasPictures])
+
+  if (!hasPictures) return <RichText>{markdown}</RichText>
+  if (resolved?.source !== markdown) return <GeneratingSkeleton text="Loading pictures..." rows={3} />
+  return <RichText>{resolved.text}</RichText>
 }

@@ -132,6 +132,17 @@ function renderProse(text: string): string {
     .join("\n\n")
 }
 
+// Pictures saved with a page are stored as [[img:path]] after its text. Render
+// the page without them, then place the pictures under it.
+const IMG_TOKEN = /\[\[img:([^\]\s]+)\]\]/g
+
+function withPictures(page: string, render: (text: string) => string): string {
+  const paths = [...page.matchAll(IMG_TOKEN)].map((m) => m[1])
+  const body = render(page.replace(IMG_TOKEN, " ").trim())
+  const figures = paths.map((path) => `![Figure](img:${path})`).join("\n\n")
+  return [body, figures].filter(Boolean).join("\n\n")
+}
+
 export function structureContent(raw: string): string {
   const text = raw.replace(/\r/g, "").trim()
   if (!text) return ""
@@ -147,9 +158,15 @@ export function structureContent(raw: string): string {
       .map((p) => (footerRe ? p.replace(footerRe, " ") : p).trim())
       .filter(Boolean)
     if (hasBullets || footer) {
-      return pages.map((p, i) => renderChunk(p, i === 0)).filter(Boolean).join("\n\n")
+      return pages
+        .map((p, i) => withPictures(p, (t) => renderChunk(t, i === 0)))
+        .filter(Boolean)
+        .join("\n\n")
     }
-    return pages.map((p) => renderProse(p)).filter(Boolean).join("\n\n---\n\n")
+    return pages
+      .map((p) => withPictures(p, renderProse))
+      .filter(Boolean)
+      .join("\n\n---\n\n")
   }
 
   // Slide deck stored as one block: cut it at every footer.

@@ -47,6 +47,12 @@ export default function RichText({ children }: { children: string }) {
           ),
           th: (p) => <th className="border border-line bg-paper px-3 py-1.5 font-semibold" {...p} />,
           td: (p) => <td className="border border-line px-3 py-1.5" {...p} />,
+          img: ({ src, alt }) => (
+            <a href={typeof src === "string" ? src : undefined} target="_blank" rel="noopener noreferrer" className="my-4 block w-fit max-w-full">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={typeof src === "string" ? src : undefined} alt={alt ?? "Figure from your document"} loading="lazy" className="max-h-[420px] w-auto max-w-full rounded-lg border border-line bg-white" />
+            </a>
+          ),
           a: (p) => <a className="text-accent-strong underline" target="_blank" rel="noopener noreferrer" {...p} />,
         }}
       >

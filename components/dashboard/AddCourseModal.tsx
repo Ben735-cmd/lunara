@@ -55,14 +55,24 @@ export default function AddCourseModal({ userId, refreshCourses }: Props) {
     const controller = new AbortController()
     abortRef.current = controller
     let courseContent = ""
+    // The id is chosen here so pictures pulled from the PDF can be filed under it.
+    const courseId = crypto.randomUUID()
 
     try {
       if (file) {
         const formData = new FormData()
         formData.append("file", file)
+        formData.append("courseId", courseId)
+        const { data: sessionData } = await supabase.auth.getSession()
+        const token = sessionData.session?.access_token
         const timer = setTimeout(() => controller.abort(), 45000)
         try {
-          const res = await fetch("/api/extract", { method: "POST", body: formData, signal: controller.signal })
+          const res = await fetch("/api/extract", {
+            method: "POST",
+            body: formData,
+            headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+            signal: controller.signal,
+          })
           const data = await res.json().catch(() => null)
           if (!res.ok || !data) {
             setError(data?.error || "Could not read that file. Try a smaller PDF or Word file.")
@@ -76,7 +86,7 @@ export default function AddCourseModal({ userId, refreshCourses }: Props) {
       }
 
       const { error: insertError } = await supabase.from("courses").insert([
-        { title, code, progress: 0, user_id: userId, content: courseContent },
+        { id: courseId, title, code, progress: 0, user_id: userId, content: courseContent },
       ])
       if (controller.signal.aborted) return
       if (insertError) {

@@ -12,6 +12,7 @@ import AddCourseModal from "./AddCourseModal"
 import AddAssignmentModal from "./AddAssignmentModal"
 import ProfileCenter from "./ProfileCenter"
 import AnimatedBackground from "../ui/AnimatedBackground"
+import { deleteCourseImages } from "../../lib/courseImages"
 import {
   AssignmentsSkeleton,
   CalendarSkeleton,
@@ -137,6 +138,7 @@ export default function Dashboard({ email, logout }: Props) {
       showToast("Couldn't delete the course. Please try again.")
       return
     }
+    deleteCourseImages(userId, id)
     fetchCourses()
   }
 
