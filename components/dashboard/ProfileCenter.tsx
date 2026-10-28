@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react"
 import { Bell, Check, ChevronDown, Lock, Mail, Moon, Settings, Sun, User } from "lucide-react"
 import { supabase } from "../../lib/supabase"
 import { getCurrentUser } from "../../lib/auth"
+import { uploadAvatar as uploadAvatarFile } from "../../lib/avatar"
+import Onboarding from "./Onboarding"
 import { getStoredNotifications, getStoredTheme, storeNotifications } from "../../lib/preferences"
 
 type Profile = {
@@ -74,6 +76,8 @@ export default function ProfileCenter({ email, onThemeChange, isDark, onStreakUp
   const [passwordSaving, setPasswordSaving] = useState(false)
   const [passwordSaved, setPasswordSaved] = useState(false)
   const [uploading, setUploading] = useState(false)
+  // Details to ask a brand-new student for. Set once, when their profile has no name yet.
+  const [welcome, setWelcome] = useState<{ userId: string; name: string; avatar: string } | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   async function updateStudyStreak(userId: string, currentStreak: number, lastActiveDate: string) {
@@ -96,6 +100,25 @@ export default function ProfileCenter({ email, onThemeChange, isDark, onStreakUp
       .eq("user_id", userId)
 
     onStreakUpdate(newStreak)
+  }
+
+  // Google accounts already carry a name and picture, so offer those as the starting point.
+  function askForDetails(user: { id: string; user_metadata?: Record<string, unknown> }) {
+    const meta = user.user_metadata ?? {}
+    const name = String(meta.full_name ?? meta.name ?? "")
+    const avatar = String(meta.avatar_url ?? meta.picture ?? "")
+    setWelcome({ userId: user.id, name, avatar })
+  }
+
+  async function saveWelcome(values: { fullName: string; university: string; avatarUrl: string }) {
+    const ok = await persist({ full_name: values.fullName, university: values.university, avatar_url: values.avatarUrl })
+    if (ok) {
+      setFullName(values.fullName)
+      setUniversity(values.university)
+      setAvatarUrl(values.avatarUrl)
+      setWelcome(null)
+    }
+    return ok
   }
 
   async function fetchProfile() {
@@ -125,6 +148,7 @@ export default function ProfileCenter({ email, onThemeChange, isDark, onStreakUp
         void persist({ notifications: localNotifications })
       }
       updateStudyStreak(user.id, data.study_streak || 0, data.last_active_date || "")
+      if (!data.full_name) askForDetails(user)
     } else {
       const newProfile: Profile = {
         user_id: user.id,
@@ -139,6 +163,7 @@ export default function ProfileCenter({ email, onThemeChange, isDark, onStreakUp
       await supabase.from("profiles").insert([newProfile])
       setProfile(newProfile)
       onStreakUpdate(0)
+      askForDetails(user)
     }
   }
 
@@ -214,13 +239,13 @@ export default function ProfileCenter({ email, onThemeChange, isDark, onStreakUp
     const user = await getCurrentUser()
     if (!user) return
     setUploading(true)
-    const fileExt = file.name.split(".").pop()
-    const fileName = `${user.id}.${fileExt}`
-    const { error } = await supabase.storage.from("avatars").upload(fileName, file, { upsert: true })
-    if (!error) {
-      const { data } = supabase.storage.from("avatars").getPublicUrl(fileName)
-      setAvatarUrl(data.publicUrl)
-      await persist({ avatar_url: data.publicUrl })
+    try {
+      const url = await uploadAvatarFile(user.id, file)
+      setAvatarUrl(url)
+      await persist({ avatar_url: url })
+    } catch (err) {
+      console.error("Could not upload the picture:", err)
+      setSaveError(true)
     }
     setUploading(false)
   }
@@ -246,6 +271,15 @@ export default function ProfileCenter({ email, onThemeChange, isDark, onStreakUp
 
   return (
     <div ref={dropdownRef} className="relative">
+      {welcome && (
+        <Onboarding
+          userId={welcome.userId}
+          email={email}
+          initialName={welcome.name}
+          initialAvatar={welcome.avatar}
+          onSave={saveWelcome}
+        />
+      )}
       <button
         onClick={() => setOpen(!open)}
         aria-haspopup="dialog"

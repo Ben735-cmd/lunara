@@ -55,6 +55,7 @@ export default function ResetPassword({ onDone }: { onDone: () => void }) {
             <input
               id="new-password"
               type="password"
+              placeholder="At least 6 characters"
               autoComplete="new-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -66,6 +67,7 @@ export default function ResetPassword({ onDone }: { onDone: () => void }) {
             <input
               id="confirm-password"
               type="password"
+              placeholder="Type the password again"
               autoComplete="new-password"
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
