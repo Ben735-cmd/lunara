@@ -6,7 +6,7 @@
 //   cache when offline.
 // - API calls, Supabase and ads are never cached, so user data and signed-in
 //   responses are not stored by the service worker.
-const CACHE_NAME = "lunara-v5"
+const CACHE_NAME = "lunara-v6"
 const STATIC_ASSETS = ["/", "/manifest.json", "/logo-mark.png"]
 
 self.addEventListener("install", (event) => {
@@ -64,5 +64,33 @@ self.addEventListener("fetch", (event) => {
         return response
       })
       .catch(() => caches.match(request).then((cached) => cached || Response.error()))
+  )
+})
+
+// Study session reminders sent from the server.
+self.addEventListener("push", (event) => {
+  let data = {}
+  try { data = event.data ? event.data.json() : {} } catch { data = { title: "Lunara", body: event.data ? event.data.text() : "" } }
+  event.waitUntil(
+    self.registration.showNotification(data.title || "Lunara", {
+      body: data.body || "",
+      icon: "/icons/icon-192x192.png",
+      badge: "/icons/icon-96x96.png",
+      tag: data.tag || "lunara",
+      data: { url: data.url || "/" },
+    })
+  )
+})
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close()
+  const target = (event.notification.data && event.notification.data.url) || "/"
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((windows) => {
+      for (const w of windows) {
+        if ("focus" in w) return w.focus()
+      }
+      return self.clients.openWindow(target)
+    })
   )
 })

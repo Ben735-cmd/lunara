@@ -20,6 +20,9 @@ export default function SolverHistory({ refreshKey }: { refreshKey: number }) {
   const [failed, setFailed] = useState(false)
   const [search, setSearch] = useState("")
   const [openId, setOpenId] = useState<string | null>(null)
+  const [confirmClear, setConfirmClear] = useState(false)
+  const [clearing, setClearing] = useState(false)
+  const [clearFailed, setClearFailed] = useState(false)
 
   async function load() {
     const user = await getCurrentUser()
@@ -43,6 +46,26 @@ export default function SolverHistory({ refreshKey }: { refreshKey: number }) {
     if (error) return
     setItems((prev) => prev.filter((i) => i.id !== item.id))
     setOpenId(null)
+  }
+
+  async function removeFromList(item: SolvedQuestion) {
+    const { error } = await supabase.from("solved_questions").delete().eq("id", item.id)
+    if (error) { setClearFailed(true); return }
+    setClearFailed(false)
+    setItems((prev) => prev.filter((i) => i.id !== item.id))
+  }
+
+  async function clearAll() {
+    const user = await getCurrentUser()
+    if (!user) return
+    setClearing(true)
+    setClearFailed(false)
+    const { error } = await supabase.from("solved_questions").delete().eq("user_id", user.id)
+    setClearing(false)
+    if (error) { setClearFailed(true); return }
+    setItems([])
+    setSearch("")
+    setConfirmClear(false)
   }
 
   const visible = useMemo(() => {
@@ -124,17 +147,56 @@ export default function SolverHistory({ refreshKey }: { refreshKey: number }) {
         </p>
       )}
 
+      {clearFailed && (
+        <p role="alert" className="mb-4 rounded-lg bg-danger-tint px-3.5 py-3 text-sm text-danger">
+          Could not delete. Check your connection and try again.
+        </p>
+      )}
+
       {items.length > 0 && (
-        <div className="relative mb-5">
-          <Search size={18} aria-hidden="true" className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-muted" />
-          <input
-            type="text"
-            aria-label="Search your history"
-            placeholder="Search solved questions"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg border border-line bg-surface py-2.5 pl-10 pr-3 text-sm text-ink placeholder:text-ink-muted/70 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
-          />
+        <div className="mb-5 flex items-center gap-3">
+          <div className="relative min-w-0 flex-1">
+            <Search size={18} aria-hidden="true" className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-muted" />
+            <input
+              type="text"
+              aria-label="Search your history"
+              placeholder="Search solved questions"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full rounded-lg border border-line bg-surface py-2.5 pl-10 pr-3 text-sm text-ink placeholder:text-ink-muted/70 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+            />
+          </div>
+          <button
+            onClick={() => setConfirmClear(true)}
+            className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-line px-3.5 py-2.5 text-sm font-medium text-ink-muted transition-colors hover:bg-danger-tint hover:text-danger"
+          >
+            <Trash2 size={16} aria-hidden="true" /> Clear all
+          </button>
+        </div>
+      )}
+
+      {confirmClear && (
+        <div role="alertdialog" aria-labelledby="clear-title" className="mb-5 rounded-xl border border-danger/40 bg-danger-tint p-4">
+          <p id="clear-title" className="text-sm font-medium text-ink">
+            Delete all {items.length} solved question{items.length === 1 ? "" : "s"}?
+          </p>
+          <p className="mt-1 text-sm text-ink-muted">This cannot be undone.</p>
+          <div className="mt-3 flex gap-3">
+            <button
+              onClick={() => setConfirmClear(false)}
+              disabled={clearing}
+              className="rounded-lg border border-line bg-surface px-4 py-2 text-sm font-medium text-ink transition-colors hover:bg-paper disabled:opacity-60"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={clearAll}
+              disabled={clearing}
+              className="rounded-lg bg-danger px-4 py-2 text-sm font-medium text-on-accent transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {clearing ? "Deleting..." : "Yes, delete all"}
+            </button>
+          </div>
         </div>
       )}
 
@@ -148,10 +210,10 @@ export default function SolverHistory({ refreshKey }: { refreshKey: number }) {
       ) : (
         <ul className="space-y-3">
           {visible.map((item) => (
-            <li key={item.id}>
+            <li key={item.id} className="flex items-stretch gap-2">
               <button
                 onClick={() => setOpenId(item.id)}
-                className={`${panel} flex w-full items-center gap-4 p-4 text-left transition-colors hover:border-accent/60`}
+                className={`${panel} flex min-w-0 flex-1 items-center gap-4 p-4 text-left transition-colors hover:border-accent/60`}
               >
                 {item.thumbnail ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -167,6 +229,13 @@ export default function SolverHistory({ refreshKey }: { refreshKey: number }) {
                     {formatDate(item.created_at)}{item.source_name ? ` · ${item.source_name}` : ""}
                   </span>
                 </span>
+              </button>
+              <button
+                onClick={() => removeFromList(item)}
+                aria-label={`Delete ${item.title}`}
+                className={`${panel} shrink-0 px-3 text-ink-muted transition-colors hover:bg-danger-tint hover:text-danger`}
+              >
+                <Trash2 size={18} aria-hidden="true" />
               </button>
             </li>
           ))}

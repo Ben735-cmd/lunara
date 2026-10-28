@@ -1,10 +1,11 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { CalendarDays, ChevronLeft, ChevronRight, Plus, Trash2 } from "lucide-react"
+import { Bell, BellOff, CalendarDays, ChevronLeft, ChevronRight, Clock, Plus, Trash2 } from "lucide-react"
 import { supabase } from "../../lib/supabase"
 import { getCurrentUser } from "../../lib/auth"
 import { CalendarSkeleton } from "../ui/Skeleton"
+import { disablePush, enablePush, getPushState, sendTestNotification, type PushState } from "../../lib/push"
 
 type Assignment = {
   id: string
@@ -19,6 +20,33 @@ type StudySession = {
   date: string
   start_time: string
   end_time: string
+  starts_at?: string | null
+  remind_minutes?: number | null
+}
+
+const REMINDER_CHOICES = [
+  { minutes: 0, label: "When it starts" },
+  { minutes: 5, label: "5 minutes before" },
+  { minutes: 10, label: "10 minutes before" },
+  { minutes: 15, label: "15 minutes before" },
+  { minutes: 30, label: "30 minutes before" },
+  { minutes: 60, label: "1 hour before" },
+]
+
+/** When a session starts, from its saved start time or, for older sessions, its date and clock time. */
+function startOf(s: StudySession): Date | null {
+  const d = s.starts_at ? new Date(s.starts_at) : new Date(`${s.date}T${s.start_time}`)
+  return Number.isNaN(d.getTime()) ? null : d
+}
+
+function untilText(start: Date, now: Date) {
+  const mins = Math.round((start.getTime() - now.getTime()) / 60000)
+  if (mins <= 0) return "now"
+  if (mins < 60) return `in ${mins} min`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `in ${hours} h ${mins % 60 ? `${mins % 60} min` : ""}`.trim()
+  const days = Math.round(hours / 24)
+  return `in ${days} day${days === 1 ? "" : "s"}`
 }
 
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"]
@@ -39,6 +67,12 @@ export default function Calendar() {
   const [endTime, setEndTime] = useState("")
   const [saving, setSaving] = useState(false)
   const [selectedDay, setSelectedDay] = useState<string | null>(null)
+  const [remindMinutes, setRemindMinutes] = useState(15)
+  const [formError, setFormError] = useState("")
+  const [pushState, setPushState] = useState<PushState | "loading">("loading")
+  const [pushBusy, setPushBusy] = useState(false)
+  const [pushMessage, setPushMessage] = useState("")
+  const [now, setNow] = useState(() => new Date())
 
   async function fetchData() {
     const user = await getCurrentUser()
@@ -54,16 +88,67 @@ export default function Calendar() {
   }
 
   useEffect(() => { fetchData() }, [])
+  useEffect(() => { getPushState().then(setPushState) }, [])
+  // Keeps the "starts in" countdown fresh while the page is open.
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 60_000)
+    return () => clearInterval(timer)
+  }, [])
+
+  async function turnOnReminders() {
+    setPushBusy(true)
+    setPushMessage("")
+    try {
+      setPushState(await enablePush(userId))
+    } catch {
+      setPushMessage("Could not turn on reminders. Check your connection and try again.")
+    }
+    setPushBusy(false)
+  }
+
+  async function turnOffReminders() {
+    setPushBusy(true)
+    setPushMessage("")
+    setPushState(await disablePush())
+    setPushBusy(false)
+  }
+
+  async function testReminder() {
+    setPushBusy(true)
+    setPushMessage("")
+    const problem = await sendTestNotification()
+    setPushMessage(problem ?? "Sent. It should arrive in a few seconds.")
+    setPushBusy(false)
+  }
 
   async function saveSession() {
-    if (!sessionTitle || !sessionDate || !startTime || !endTime) return
+    if (!sessionTitle.trim() || !sessionDate || !startTime || !endTime) {
+      setFormError("Fill in the title, date, start and end time.")
+      return
+    }
+    if (endTime <= startTime) {
+      setFormError("The end time must be after the start time.")
+      return
+    }
+    const start = new Date(`${sessionDate}T${startTime}`)
+    if (start.getTime() < Date.now()) {
+      setFormError("That start time has already passed. Pick a time in the future.")
+      return
+    }
     setSaving(true)
-    await supabase.from("study_sessions").insert([{
-      title: sessionTitle, date: sessionDate,
+    setFormError("")
+    const { error } = await supabase.from("study_sessions").insert([{
+      title: sessionTitle.trim(), date: sessionDate,
       start_time: startTime, end_time: endTime, user_id: userId,
+      starts_at: start.toISOString(), remind_minutes: remindMinutes,
     }])
-    setSessionTitle(""); setSessionDate(""); setStartTime(""); setEndTime("")
-    setAdding(false); setSaving(false)
+    setSaving(false)
+    if (error) {
+      setFormError("Could not save the session. Please try again.")
+      return
+    }
+    setSessionTitle(""); setSessionDate(""); setStartTime(""); setEndTime(""); setRemindMinutes(15)
+    setAdding(false)
     fetchData()
   }
 
@@ -90,7 +175,7 @@ export default function Calendar() {
 
   const selectedEvents = selectedDay ? {
     dayAssignments: assignments.filter(a => a.due_date === selectedDay),
-    daySessions: sessions.filter(s => s.date === selectedDay),
+    daySessions: sessions.filter(s => s.date === selectedDay).sort((a, b) => a.start_time.localeCompare(b.start_time)),
   } : null
 
   const panel = "rounded-xl border border-line bg-surface p-6"
@@ -100,6 +185,11 @@ export default function Calendar() {
     "rounded-lg border border-line p-2 text-ink-muted transition-colors hover:bg-paper hover:text-ink"
 
   const pendingAssignments = assignments.filter(a => !a.completed)
+
+  const nextSession = sessions
+    .map((session) => ({ session, start: startOf(session) }))
+    .filter((x): x is { session: StudySession; start: Date } => !!x.start && x.start.getTime() > now.getTime() - 60_000)
+    .sort((a, b) => a.start.getTime() - b.start.getTime())[0] ?? null
 
   if (!loaded) return <CalendarSkeleton />
 
@@ -164,9 +254,28 @@ export default function Calendar() {
               </div>
             </div>
           </div>
+          <div className="mt-3">
+            <label htmlFor="session-remind" className="mb-1.5 block text-sm font-medium text-ink">Remind me</label>
+            <select
+              id="session-remind"
+              value={remindMinutes}
+              onChange={(e) => setRemindMinutes(Number(e.target.value))}
+              className={inputClass}
+            >
+              {REMINDER_CHOICES.map((c) => (
+                <option key={c.minutes} value={c.minutes}>{c.label}</option>
+              ))}
+            </select>
+            {pushState === "off" && (
+              <p className="mt-1.5 text-xs text-ink-muted">Turn on reminders below to get a notification on this device.</p>
+            )}
+          </div>
+          {formError && (
+            <p role="alert" className="mt-4 rounded-lg bg-danger-tint px-3.5 py-2.5 text-sm text-danger">{formError}</p>
+          )}
           <div className="mt-5 flex gap-3">
             <button
-              onClick={() => setAdding(false)}
+              onClick={() => { setAdding(false); setFormError("") }}
               className="flex-1 rounded-lg border border-line bg-surface py-2.5 text-sm font-medium text-ink transition-colors hover:bg-paper"
             >
               Cancel
@@ -264,6 +373,80 @@ export default function Calendar() {
 
         {/* Events panel */}
         <div className="flex flex-col gap-6">
+          {/* Next study session */}
+          <div className={panel}>
+            <h2 className="mb-3 text-lg font-semibold text-ink">Next study session</h2>
+            {nextSession ? (
+              <div className="flex items-start gap-3">
+                <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent-tint text-accent-strong">
+                  <Clock size={18} aria-hidden="true" />
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-ink">{nextSession.session.title}</p>
+                  <p className="mt-0.5 text-xs text-ink-muted">
+                    {nextSession.start.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })} · {nextSession.session.start_time}
+                  </p>
+                  <p className="mt-1 text-xs font-medium text-accent-strong">Starts {untilText(nextSession.start, now)}</p>
+                </div>
+              </div>
+            ) : (
+              <p className="py-2 text-sm text-ink-muted">Nothing planned. Add a study session to get started.</p>
+            )}
+          </div>
+
+          {/* Reminders */}
+          <div className={panel}>
+            <h2 className="mb-1 flex items-center gap-2 text-lg font-semibold text-ink">
+              {pushState === "on" ? <Bell size={18} aria-hidden="true" className="text-accent" /> : <BellOff size={18} aria-hidden="true" className="text-ink-muted" />}
+              Reminders
+            </h2>
+            {pushState === "loading" && <p className="text-sm text-ink-muted">Checking...</p>}
+            {pushState === "unsupported" && (
+              <p className="text-sm leading-relaxed text-ink-muted">
+                This browser can&apos;t send reminders. On iPhone, add Lunara to your Home Screen first, then open it from there.
+              </p>
+            )}
+            {pushState === "denied" && (
+              <p className="text-sm leading-relaxed text-ink-muted">
+                Notifications are blocked for Lunara. Allow them in your browser&apos;s site settings, then come back here.
+              </p>
+            )}
+            {pushState === "off" && (
+              <>
+                <p className="text-sm leading-relaxed text-ink-muted">Get a notification on this device before each study session starts.</p>
+                <button
+                  onClick={turnOnReminders}
+                  disabled={pushBusy}
+                  className="mt-3 w-full rounded-lg bg-accent py-2.5 text-sm font-medium text-on-accent transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {pushBusy ? "Turning on..." : "Turn on reminders"}
+                </button>
+              </>
+            )}
+            {pushState === "on" && (
+              <>
+                <p className="text-sm leading-relaxed text-ink-muted">Reminders are on for this device.</p>
+                <div className="mt-3 flex gap-3">
+                  <button
+                    onClick={testReminder}
+                    disabled={pushBusy}
+                    className="flex-1 rounded-lg border border-line bg-surface py-2 text-sm font-medium text-ink transition-colors hover:bg-paper disabled:opacity-60"
+                  >
+                    Send a test
+                  </button>
+                  <button
+                    onClick={turnOffReminders}
+                    disabled={pushBusy}
+                    className="flex-1 rounded-lg border border-line bg-surface py-2 text-sm font-medium text-ink-muted transition-colors hover:bg-danger-tint hover:text-danger disabled:opacity-60"
+                  >
+                    Turn off
+                  </button>
+                </div>
+              </>
+            )}
+            {pushMessage && <p role="status" className="mt-3 text-xs text-ink-muted">{pushMessage}</p>}
+          </div>
+
           {selectedDay ? (
             <div className={panel}>
               <h2 className="mb-4 text-lg font-semibold text-ink">
@@ -294,6 +477,10 @@ export default function Calendar() {
                           <p className="text-sm font-medium text-ink">{s.title}</p>
                         </div>
                         <p className="ml-4 mt-0.5 text-xs text-ink-muted">{s.start_time} – {s.end_time}</p>
+                        <p className="ml-4 mt-0.5 flex items-center gap-1 text-xs text-ink-muted">
+                          <Bell size={12} aria-hidden="true" />
+                          {REMINDER_CHOICES.find((c) => c.minutes === (s.remind_minutes ?? 15))?.label ?? `${s.remind_minutes} minutes before`}
+                        </p>
                       </div>
                       <button
                         onClick={() => deleteSession(s.id)}
