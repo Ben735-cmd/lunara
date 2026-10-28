@@ -93,9 +93,13 @@ $$;
 revoke all on function public.drop_push_endpoint(text, text) from public;
 grant execute on function public.drop_push_endpoint(text, text) to anon, authenticated;
 
--- 6. Runs the reminder check every minute (enable pg_cron and pg_net under Database > Extensions first)
+-- 6. Runs the reminder check every minute. Enable pg_cron and pg_net under Database > Extensions first,
+--    store the VAPID private key next to the cron secret, and deploy supabase/functions/send-reminders
+--    (Vercel's bot protection blocks the scheduler, so the sender runs on Supabase instead).
+-- insert into public.app_secrets (name, value) values ('vapid_private_key', '<VAPID_PRIVATE_KEY>')
+--   on conflict (name) do update set value = excluded.value;
 -- select cron.schedule('study-reminders', '* * * * *', $$
 --   select net.http_post(
---     url := 'https://YOUR-DOMAIN/api/push/cron',
+--     url := 'https://<PROJECT-REF>.supabase.co/functions/v1/send-reminders',
 --     headers := jsonb_build_object('Content-Type', 'application/json', 'x-cron-secret', '<CRON_SECRET>'),
 --     body := '{}'::jsonb) $$);
