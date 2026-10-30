@@ -3,6 +3,7 @@
 import { useRef, useState } from "react"
 import { FileText } from "lucide-react"
 import { supabase } from "../../lib/supabase"
+import { newId } from "../../lib/uuid"
 
 type Props = {
   userId: string
@@ -56,7 +57,7 @@ export default function AddCourseModal({ userId, refreshCourses }: Props) {
     abortRef.current = controller
     let courseContent = ""
     // The id is chosen here so pictures pulled from the PDF can be filed under it.
-    const courseId = crypto.randomUUID()
+    const courseId = newId()
 
     try {
       if (file) {

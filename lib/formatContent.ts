@@ -74,7 +74,9 @@ function splitBullets(chunk: string): { head: string; bullets: Bullet[] } {
 }
 
 function paragraphs(text: string, size = 420): string[] {
-  const sentences = text.split(/(?<=[.!?])\s+/)
+  // No regex lookbehind here: it is a syntax error on iOS older than 16.4 and
+  // would stop the whole page from loading. Mark sentence ends, then split.
+  const sentences = text.replace(/([.!?])\s+/g, "$1\u0001").split("\u0001")
   const out: string[] = []
   let current = ""
   for (const s of sentences) {
@@ -116,7 +118,9 @@ function renderProse(text: string): string {
   // Escape first, so the Markdown markers we add below stay intact.
   const body = escapeMd(text)
     .replace(BULLET_RE, "\n- ")
-    .replace(/(?<!\]:)\s((?:[1-9]|1\d|20)(?:\.[1-9]\d?){1,3})\s+(?=[A-Z])/g, "\n\n**$1** ")
+    .replace(/(\]:)?\s((?:[1-9]|1\d|20)(?:\.[1-9]\d?){1,3})\s+(?=[A-Z])/g, (match, afterLink, num) =>
+      afterLink ? match : `\n\n**${num}** `
+    )
     .replace(/\s\((\d{1,2})\)\s+(?=[A-Z])/g, "\n\n($1) ")
   return body
     .split(/\n{2,}/)
