@@ -8,6 +8,7 @@ import { getCurrentUser } from "../../lib/auth"
 import { calculateProgress, type QuizAttempt } from "../../lib/progress"
 import { applyThemeClass, initialTheme, storeTheme } from "../../lib/preferences"
 import Sidebar from "../layout/Sidebar"
+import FocusProvider from "../focus/FocusProvider"
 import AddCourseModal from "./AddCourseModal"
 import AddAssignmentModal from "./AddAssignmentModal"
 import ProfileCenter from "./ProfileCenter"
@@ -199,6 +200,7 @@ export default function Dashboard({ email, logout }: Props) {
     "rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:bg-paper"
 
   return (
+    <FocusProvider>
     <main className={`${isDark ? "dark" : ""} relative isolate flex min-h-screen bg-paper text-ink`}>
       <AnimatedBackground />
       <style>{`
@@ -244,6 +246,10 @@ export default function Dashboard({ email, logout }: Props) {
       {selectedCourseId ? (
         <CourseViewer
           courseId={selectedCourseId}
+          onOpenFocus={() => {
+            setSelectedCourseId(null)
+            setActiveNav("Focus")
+          }}
           onBack={() => {
             setSelectedCourseId(null)
             fetchCourses()
@@ -427,5 +433,6 @@ export default function Dashboard({ email, logout }: Props) {
         </section>
       )}
     </main>
+    </FocusProvider>
   )
 }

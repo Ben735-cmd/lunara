@@ -9,6 +9,7 @@ import { schedule, describeInterval, type Grade } from "../../lib/sm2"
 import { calculateProgress, MASTERED_INTERVAL_DAYS, type QuizAttempt } from "../../lib/progress"
 import { getCurrentUser } from "../../lib/auth"
 import { structureContent } from "../../lib/formatContent"
+import FocusPill from "../focus/FocusPill"
 import { imagePaths, plainContent, resolveImages } from "../../lib/courseImages"
 
 const RichText = dynamic(() => import("../ui/RichText"), { loading: () => <GeneratingSkeleton text="Formatting..." rows={3} /> })
@@ -25,6 +26,7 @@ type Course = {
 type Props = {
   courseId: string
   onBack: () => void
+  onOpenFocus?: () => void
 }
 
 type Tab = "content" | "summary" | "quiz" | "flashcards" | "explain"
@@ -45,7 +47,7 @@ type Flashcard = {
   due_at: string
 }
 
-export default function CourseViewer({ courseId, onBack }: Props) {
+export default function CourseViewer({ courseId, onBack, onOpenFocus }: Props) {
   const [course, setCourse] = useState<Course | null>(null)
   const [attempts, setAttempts] = useState<QuizAttempt[]>([])
   const [activeTab, setActiveTab] = useState<Tab>("content")
@@ -754,6 +756,7 @@ export default function CourseViewer({ courseId, onBack }: Props) {
           </div>
         </div>
       </div>
+      {onOpenFocus && <FocusPill courseTitle={course.title} onOpenFocus={onOpenFocus} />}
     </section>
   )
 }
