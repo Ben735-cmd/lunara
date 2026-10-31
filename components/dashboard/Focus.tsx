@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { Pause, Play, RotateCcw, Settings as SettingsIcon, SkipForward } from "lucide-react"
+import { Check, Pause, Play, RotateCcw, Settings as SettingsIcon, SkipForward, X } from "lucide-react"
 import { supabase } from "../../lib/supabase"
 import { getCurrentUser } from "../../lib/auth"
 import type { PushState } from "../../lib/push"
@@ -28,6 +28,13 @@ const inputClass =
   "w-full rounded-lg border border-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-muted/70 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
 const MODES: Mode[] = ["focus", "short", "long"]
 const R = 120
+const PRAISE = [
+  "Well done! That was a solid block of focus.",
+  "Great work! Every block gets you closer to the exam.",
+  "Session complete. Your future self says thank you.",
+  "Nicely done! Consistency beats cramming.",
+  "Focus block finished. You earned this break.",
+]
 const CIRC = 2 * Math.PI * R
 
 function dayKey(d: Date) {
@@ -44,6 +51,11 @@ export default function Focus() {
   const [rows, setRows] = useState<FocusRow[]>([])
   const [statsFailed, setStatsFailed] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const [draft, setDraft] = useState<Record<"focus" | "short" | "long" | "rounds", string>>({ focus: "", short: "", long: "", rounds: "" })
+  const [draftAuto, setDraftAuto] = useState(false)
+  const [draftSound, setDraftSound] = useState(true)
+  const [savedNote, setSavedNote] = useState(false)
+  const [done, setDone] = useState<{ minutes: number; label: string; message: string; autoStarted: boolean } | null>(null)
 
   const timerRef = useRef(timer)
   const settingsRef = useRef(settings)
@@ -126,6 +138,15 @@ export default function Focus() {
     try { navigator.vibrate?.([200, 100, 200]) } catch { /* not supported */ }
     notifyLocal(wasFocus ? "Focus block done" : "Break is over", wasFocus ? "Nice work. Time to take a break." : "Ready for the next focus block?")
     syncAlert(endsAt, next.mode)
+
+    if (wasFocus) {
+      setDone({
+        minutes: Math.max(1, Math.round(durationMs("focus", s) / 60000)),
+        label: t.label.trim(),
+        message: PRAISE[Math.floor(Math.random() * PRAISE.length)],
+        autoStarted: auto,
+      })
+    }
 
     if (wasFocus && userRef.current) {
       supabase
@@ -220,12 +241,46 @@ export default function Focus() {
     syncAlert(null, mode)
   }
 
-  function updateSettings(patch: Partial<Settings>) {
-    const next = cleanSettings({ ...settings, ...patch })
-    setSettings(next)
-    // an idle timer follows the new length straight away
-    if (!timer.running) setTimer({ ...timer, remainingMs: durationMs(timer.mode, next) })
+  function openSettings() {
+    setDraft({ focus: String(settings.focus), short: String(settings.short), long: String(settings.long), rounds: String(settings.rounds) })
+    setDraftAuto(settings.autoStart)
+    setDraftSound(settings.sound)
+    setSavedNote(false)
+    setShowSettings(true)
   }
+
+  function saveSettings() {
+    const next = cleanSettings({
+      focus: Number(draft.focus),
+      short: Number(draft.short),
+      long: Number(draft.long),
+      rounds: Number(draft.rounds),
+      autoStart: draftAuto,
+      sound: draftSound,
+    })
+    setSettings(next)
+    // a running block keeps its length; an idle timer follows the new length straight away
+    if (!timer.running) setTimer({ ...timer, remainingMs: durationMs(timer.mode, next), round: Math.min(timer.round, next.rounds) })
+    setShowSettings(false)
+    setSavedNote(true)
+    setTimeout(() => setSavedNote(false), 3000)
+  }
+
+  function startBreak() {
+    setDone(null)
+    if (!timer.running) start()
+  }
+
+  // Escape closes the settings panel or the congratulations card.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return
+      setDone(null)
+      setShowSettings(false)
+    }
+    document.addEventListener("keydown", onKey)
+    return () => document.removeEventListener("keydown", onKey)
+  }, [])
 
   async function removeSession(id: string) {
     setRows((r) => r.filter((x) => x.id !== id))
@@ -258,7 +313,7 @@ export default function Focus() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-3xl font-semibold tracking-tight text-ink">Focus</h1>
         <button
-          onClick={() => setShowSettings((v) => !v)}
+          onClick={() => (showSettings ? setShowSettings(false) : openSettings())}
           aria-expanded={showSettings}
           className="inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-4 py-2 text-sm font-medium text-ink transition-colors hover:bg-paper"
         >
@@ -269,8 +324,24 @@ export default function Focus() {
         Work in focused blocks with short breaks in between. Finished blocks are saved so you can see your week.
       </p>
 
+      {savedNote && !showSettings && (
+        <p role="status" className="mt-4 inline-flex items-center gap-2 rounded-lg bg-accent-tint px-3.5 py-2 text-sm font-medium text-accent-strong">
+          <Check size={16} aria-hidden="true" /> Settings saved
+        </p>
+      )}
+
       {showSettings && (
         <div className={`${panel} mt-6`}>
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-ink">Timer settings</h2>
+            <button
+              onClick={() => setShowSettings(false)}
+              aria-label="Close settings"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-ink-muted transition-colors hover:bg-paper hover:text-ink"
+            >
+              <X size={18} aria-hidden="true" />
+            </button>
+          </div>
           <div className="grid gap-3 sm:grid-cols-4">
             {([
               ["focus", "Focus (min)", 1, 120],
@@ -283,34 +354,46 @@ export default function Focus() {
                 <input
                   id={`set-${key}`}
                   type="number"
+                  inputMode="numeric"
                   min={min}
                   max={max}
-                  value={settings[key]}
-                  onChange={(e) => updateSettings({ [key]: e.target.value === "" ? settings[key] : Number(e.target.value) })}
+                  value={draft[key]}
+                  onChange={(e) => setDraft({ ...draft, [key]: e.target.value })}
                   className={inputClass}
                 />
+                <p className="mt-1 text-xs text-ink-muted">{min} to {max}</p>
               </div>
             ))}
           </div>
           <div className="mt-4 flex flex-wrap gap-x-8 gap-y-3">
             <label className="flex items-center gap-2.5 text-sm text-ink">
-              <input
-                type="checkbox"
-                checked={settings.autoStart}
-                onChange={(e) => updateSettings({ autoStart: e.target.checked })}
-                className="h-4 w-4 accent-[var(--color-accent)]"
-              />
+              <input type="checkbox" checked={draftAuto} onChange={(e) => setDraftAuto(e.target.checked)} className="h-4 w-4 accent-[var(--color-accent)]" />
               Start the next block automatically
             </label>
             <label className="flex items-center gap-2.5 text-sm text-ink">
-              <input
-                type="checkbox"
-                checked={settings.sound}
-                onChange={(e) => updateSettings({ sound: e.target.checked })}
-                className="h-4 w-4 accent-[var(--color-accent)]"
-              />
+              <input type="checkbox" checked={draftSound} onChange={(e) => setDraftSound(e.target.checked)} className="h-4 w-4 accent-[var(--color-accent)]" />
               Play a sound when a block ends
             </label>
+          </div>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <button
+              onClick={() => setShowSettings(false)}
+              className="flex-1 rounded-lg border border-line bg-surface py-2.5 text-sm font-medium text-ink transition-colors hover:bg-paper sm:flex-none sm:px-6"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => setDraft({ focus: "25", short: "5", long: "15", rounds: "4" })}
+              className="rounded-lg px-4 py-2.5 text-sm font-medium text-ink-muted transition-colors hover:text-ink"
+            >
+              Reset to defaults
+            </button>
+            <button
+              onClick={saveSettings}
+              className="flex-1 rounded-lg bg-accent py-2.5 text-sm font-medium text-on-accent transition-colors hover:bg-accent-strong sm:ml-auto sm:flex-none sm:px-8"
+            >
+              Save settings
+            </button>
           </div>
         </div>
       )}
@@ -473,6 +556,47 @@ export default function Focus() {
           )}
         </div>
       </div>
+
+      {done && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 px-5" onClick={() => setDone(null)}>
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="done-title"
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-sm rounded-2xl border border-line bg-surface p-7 text-center shadow-xl"
+          >
+            <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-accent-tint text-accent-strong">
+              <Check size={28} aria-hidden="true" />
+            </span>
+            <h2 id="done-title" className="mt-4 text-2xl font-semibold tracking-tight text-ink">Session complete</h2>
+            <p className="mt-2 text-sm leading-relaxed text-ink-muted">{done.message}</p>
+            <p className="mt-4 text-sm text-ink">
+              You focused for <span className="font-semibold">{done.minutes} {done.minutes === 1 ? "minute" : "minutes"}</span>
+              {done.label ? <> on <span className="font-semibold">{done.label}</span></> : null}.
+            </p>
+            <p className="mt-1 text-xs text-ink-muted">
+              Today: {stats.todayMinutes + (rows.length === 0 || stats.todayCount === 0 ? done.minutes : 0)} min of focus
+            </p>
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={() => setDone(null)}
+                className="flex-1 rounded-lg border border-line bg-surface py-2.5 text-sm font-medium text-ink transition-colors hover:bg-paper"
+              >
+                {done.autoStarted ? "Got it" : "Not now"}
+              </button>
+              {!done.autoStarted && (
+                <button
+                  onClick={startBreak}
+                  className="flex-1 rounded-lg bg-accent py-2.5 text-sm font-medium text-on-accent transition-colors hover:bg-accent-strong"
+                >
+                  Start break
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   )
 }
