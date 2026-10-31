@@ -62,6 +62,8 @@ export default function Dashboard({ email, logout }: Props) {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null)
   const [activeNav, setActiveNav] = useState("Dashboard")
+  // The course a student came from when they opened Focus from its timer, so they can go straight back.
+  const [focusFromCourse, setFocusFromCourse] = useState<string | null>(null)
   // Starts from the choice saved on this device, so a refresh keeps your theme.
   const [isDark, setIsDark] = useState(initialTheme)
 
@@ -233,12 +235,14 @@ export default function Dashboard({ email, logout }: Props) {
         logout={logout}
         onSelectCourse={(id) => {
           setSelectedCourseId(id || null)
+          setFocusFromCourse(null)
           if (id) setActiveNav("Courses")
         }}
         selectedCourseId={selectedCourseId}
         activeNav={activeNav}
         setActiveNav={(nav) => {
           setActiveNav(nav)
+          setFocusFromCourse(null)
           if (nav !== "Courses") setSelectedCourseId(null)
         }}
       />
@@ -247,6 +251,7 @@ export default function Dashboard({ email, logout }: Props) {
         <CourseViewer
           courseId={selectedCourseId}
           onOpenFocus={() => {
+            setFocusFromCourse(selectedCourseId)
             setSelectedCourseId(null)
             setActiveNav("Focus")
           }}
@@ -264,7 +269,20 @@ export default function Dashboard({ email, logout }: Props) {
       ) : activeNav === "Timetable" ? (
         <Timetable />
       ) : activeNav === "Focus" ? (
-        <Focus />
+        <Focus
+          backTo={(() => {
+            const from = courses.find((c) => c.id === focusFromCourse)
+            if (!focusFromCourse) return undefined
+            return {
+              label: from ? `Back to ${from.title}` : "Back to course",
+              onBack: () => {
+                setSelectedCourseId(focusFromCourse)
+                setActiveNav("Courses")
+                setFocusFromCourse(null)
+              },
+            }
+          })()}
+        />
       ) : activeNav === "Past papers" ? (
         <PastPapers />
       ) : activeNav === "Solver" ? (

@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Check, Pause, Play, RotateCcw, Settings as SettingsIcon, SkipForward, X } from "lucide-react"
+import { ArrowLeft, Check, Pause, Play, RotateCcw, Settings as SettingsIcon, SkipForward, X } from "lucide-react"
 import { getCurrentUser } from "../../lib/auth"
 import { MODE_LABEL, cleanSettings, formatClock, type Mode } from "../../lib/pomodoro"
 import { useFocus } from "../focus/FocusProvider"
@@ -14,7 +14,7 @@ const MODES: Mode[] = ["focus", "short", "long"]
 const R = 120
 const CIRC = 2 * Math.PI * R
 
-export default function Focus() {
+export default function Focus({ backTo }: { backTo?: { label: string; onBack: () => void } }) {
   const { settings, timer, remaining, total, rows, statsFailed, stats, setPushState, start, pause, reset, skip, pickMode, setLabel, applySettings, removeSession } = useFocus()
   const [userId, setUserId] = useState("")
   const [showSettings, setShowSettings] = useState(false)
@@ -66,6 +66,15 @@ export default function Focus() {
 
   return (
     <section className="w-full flex-1 overflow-y-auto px-5 pb-8 pt-[88px] md:px-12 md:py-11">
+      {backTo && (
+        <button
+          onClick={backTo.onBack}
+          className="mb-4 inline-flex max-w-full items-center gap-2 rounded-lg border border-line bg-surface px-3.5 py-2 text-sm font-medium text-ink transition-colors hover:bg-paper"
+        >
+          <ArrowLeft size={16} aria-hidden="true" className="shrink-0" />
+          <span className="truncate">{backTo.label}</span>
+        </button>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-3xl font-semibold tracking-tight text-ink">Focus</h1>
         <button
