@@ -65,30 +65,37 @@ export default function Focus({ backTo }: { backTo?: { label: string; onBack: ()
   const progress = total > 0 ? Math.min(1, Math.max(0, 1 - remaining / total)) : 0
   const clock = formatClock(remaining)
 
+  const subtitle = "Work in focused blocks with short breaks in between. Finished blocks are saved so you can see your week."
+  const settingsButton = (
+    <button
+      onClick={() => (showSettings ? setShowSettings(false) : openSettings())}
+      aria-expanded={showSettings}
+      className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-line bg-surface px-4 py-2 text-sm font-medium text-ink transition-colors hover:bg-paper"
+    >
+      <SettingsIcon size={16} aria-hidden="true" /> <span className="sm:hidden">Settings</span><span className="hidden sm:inline">Timer settings</span>
+    </button>
+  )
+
   return (
     <section className="w-full flex-1 overflow-y-auto px-5 pb-8 pt-[88px] md:px-12 md:py-11">
-      {backTo && (
-        <button
-          onClick={backTo.onBack}
-          className="mb-4 inline-flex max-w-full items-center gap-2 rounded-lg border border-line bg-surface px-3.5 py-2 text-sm font-medium text-ink transition-colors hover:bg-paper"
-        >
-          <ArrowLeft size={16} aria-hidden="true" className="shrink-0" />
-          <span className="truncate">{backTo.label}</span>
-        </button>
+      {backTo ? (
+        <>
+          {/* Back and Settings share one row so they line up */}
+          <div className="mb-5 flex items-center justify-between gap-3">
+            <button
+              onClick={backTo.onBack}
+              className="inline-flex min-w-0 items-center gap-2 rounded-lg border border-line bg-surface px-4 py-2 text-sm font-medium text-ink transition-colors hover:bg-paper"
+            >
+              <ArrowLeft size={16} aria-hidden="true" className="shrink-0" />
+              <span className="truncate">{backTo.label}</span>
+            </button>
+            {settingsButton}
+          </div>
+          <PageHeader title="Focus" subtitle={subtitle} />
+        </>
+      ) : (
+        <PageHeader title="Focus" subtitle={subtitle} action={settingsButton} />
       )}
-      <PageHeader
-        title="Focus"
-        subtitle="Work in focused blocks with short breaks in between. Finished blocks are saved so you can see your week."
-        action={
-          <button
-            onClick={() => (showSettings ? setShowSettings(false) : openSettings())}
-            aria-expanded={showSettings}
-            className="inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-4 py-2 text-sm font-medium text-ink transition-colors hover:bg-paper"
-          >
-            <SettingsIcon size={16} aria-hidden="true" /> <span className="sm:hidden">Settings</span><span className="hidden sm:inline">Timer settings</span>
-          </button>
-        }
-      />
 
       {savedNote && !showSettings && (
         <p role="status" className="mt-4 inline-flex items-center gap-2 rounded-lg bg-accent-tint px-3.5 py-2 text-sm font-medium text-accent-strong">
