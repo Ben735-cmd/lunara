@@ -16,6 +16,8 @@ import { deleteCourseImages } from "../../lib/courseImages"
 import {
   AssignmentsSkeleton,
   CalendarSkeleton,
+  FocusSkeleton,
+  TimetableSkeleton,
   CourseSkeleton,
   DashboardLoading,
   NotesSkeleton,
@@ -27,6 +29,8 @@ import {
 const CourseViewer = dynamic(() => import("./CourseViewer"), { loading: () => <CourseSkeleton /> })
 const Notes = dynamic(() => import("./Notes"), { loading: () => <NotesSkeleton /> })
 const Calendar = dynamic(() => import("./Calendar"), { loading: () => <CalendarSkeleton /> })
+const Timetable = dynamic(() => import("./Timetable"), { loading: () => <TimetableSkeleton /> })
+const Focus = dynamic(() => import("./Focus"), { loading: () => <FocusSkeleton /> })
 const Assignments = dynamic(() => import("./Assignments"), { loading: () => <AssignmentsSkeleton /> })
 const PastPapers = dynamic(() => import("./PastPapers"), { loading: () => <PapersSkeleton /> })
 const QuestionSolver = dynamic(() => import("./QuestionSolver"))
@@ -251,6 +255,10 @@ export default function Dashboard({ email, logout }: Props) {
         <Notes />
       ) : activeNav === "Calendar" ? (
         <Calendar />
+      ) : activeNav === "Timetable" ? (
+        <Timetable />
+      ) : activeNav === "Focus" ? (
+        <Focus />
       ) : activeNav === "Past papers" ? (
         <PastPapers />
       ) : activeNav === "Solver" ? (

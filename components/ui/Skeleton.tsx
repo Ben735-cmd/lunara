@@ -208,6 +208,47 @@ export function CalendarSkeleton() {
   )
 }
 
+export function TimetableSkeleton() {
+  return (
+    <Region label="Loading timetable" className={shell}>
+      <PageHeader />
+      <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_340px]">
+        <div className="grid gap-4 xl:grid-cols-7">
+          {Array.from({ length: 7 }).map((_, i) => (
+            <div key={i} className={`${panel} space-y-3 p-4`}>
+              <Skeleton className="h-4 w-12" />
+              <Skeleton className="h-16 rounded-lg" />
+            </div>
+          ))}
+        </div>
+        <div className={`${panel} h-fit p-6`}>
+          <Skeleton className="h-6 w-32" />
+          <Skeleton className="mt-4 h-10 w-full" />
+        </div>
+      </div>
+    </Region>
+  )
+}
+
+export function FocusSkeleton() {
+  return (
+    <Region label="Loading timer" className={shell}>
+      <PageHeader />
+      <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_340px]">
+        <div className={`${panel} flex flex-col items-center p-6`}>
+          <Skeleton className="h-11 w-72 rounded-xl" />
+          <Skeleton className="mt-8 h-[280px] w-[280px] rounded-full" />
+          <Skeleton className="mt-6 h-12 w-40 rounded-full" />
+        </div>
+        <div className={`${panel} h-fit p-6`}>
+          <Skeleton className="h-6 w-24" />
+          <Skeleton className="mt-4 h-24 w-full" />
+        </div>
+      </div>
+    </Region>
+  )
+}
+
 export function CourseSkeleton() {
   return (
     <Region label="Loading course" className={shell}>

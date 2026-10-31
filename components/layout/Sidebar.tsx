@@ -6,6 +6,7 @@ import { SidebarCoursesSkeleton } from "../ui/Skeleton"
 import {
   BookOpen,
   Calculator,
+  CalendarClock,
   CalendarDays,
   ChevronDown,
   LayoutDashboard,
@@ -14,6 +15,7 @@ import {
   Library,
   Menu,
   NotebookText,
+  Timer,
   type LucideIcon,
 } from "lucide-react"
 import { supabase } from "../../lib/supabase"
@@ -39,6 +41,8 @@ const navIcons: Record<string, LucideIcon> = {
   Notes: NotebookText,
   "Past papers": Library,
   Calendar: CalendarDays,
+  Timetable: CalendarClock,
+  Focus: Timer,
   Solver: Calculator,
 }
 
@@ -98,7 +102,7 @@ export default function Sidebar({ logout, onSelectCourse, selectedCourseId, acti
     if (isMobile) setMobileOpen(false)
   }
 
-  const navItems = ["Assignments", "Notes", "Calendar", "Past papers", "Solver"]
+  const navItems = ["Assignments", "Notes", "Calendar", "Timetable", "Focus", "Past papers", "Solver"]
 
   const itemBase =
     "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors"
