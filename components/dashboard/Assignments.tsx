@@ -5,6 +5,8 @@ import { AlertTriangle, CalendarCheck, Check, ClipboardList, Plus, Search, Trash
 import { supabase } from "../../lib/supabase"
 import { getCurrentUser } from "../../lib/auth"
 import { AssignmentsSkeleton } from "../ui/Skeleton"
+import PageHeader from "../ui/PageHeader"
+import { formatDate } from "../../lib/dates"
 
 type Assignment = {
   id: string
@@ -102,15 +104,18 @@ export default function Assignments() {
   return (
     <section className="w-full flex-1 overflow-y-auto px-5 pb-8 pt-[88px] md:px-12 md:py-11">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-3xl font-semibold tracking-tight text-ink">Assignments</h1>
-        <button
-          onClick={() => setAdding(true)}
-          className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-on-accent transition-colors hover:bg-accent-strong"
-        >
-          <Plus size={16} aria-hidden="true" /> New assignment
-        </button>
-      </div>
+      <PageHeader
+        title="Assignments"
+        subtitle="Track what is due and tick things off as you finish."
+        action={
+          <button
+            onClick={() => setAdding(true)}
+            className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-on-accent transition-colors hover:bg-accent-strong"
+          >
+            <Plus size={16} aria-hidden="true" /> <span className="sm:hidden">New</span><span className="hidden sm:inline">New assignment</span>
+          </button>
+        }
+      />
 
       {/* Stats */}
       <div className="mt-8 grid grid-cols-3 gap-px overflow-hidden rounded-xl border border-line bg-line">
@@ -229,7 +234,7 @@ export default function Assignments() {
               const badge = getDueBadge(assignment.due_date, assignment.completed)
 
               return (
-                <li key={assignment.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+                <li key={assignment.id} className="flex items-center justify-between gap-3 px-5 py-4">
                   <div className="flex min-w-0 flex-1 items-center gap-3.5">
                     <button
                       onClick={() => toggleAssignment(assignment.id, assignment.completed)}
@@ -250,13 +255,14 @@ export default function Assignments() {
                         {assignment.title}
                       </p>
                       <p className="mt-0.5 text-sm text-ink-muted">
-                        Due {new Date(assignment.due_date + "T00:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" })}
+                        Due {formatDate(assignment.due_date)}
                       </p>
+                      <span className={`mt-2 inline-block rounded-md px-2.5 py-1 text-xs font-medium sm:hidden ${badge.className}`}>{badge.label}</span>
                     </div>
                   </div>
 
                   <div className="flex shrink-0 items-center gap-2">
-                    <span className={`rounded-md px-2.5 py-1 text-xs font-medium ${badge.className}`}>{badge.label}</span>
+                    <span className={`hidden rounded-md px-2.5 py-1 text-xs font-medium sm:inline ${badge.className}`}>{badge.label}</span>
                     <button
                       onClick={() => deleteAssignment(assignment.id)}
                       aria-label={`Delete ${assignment.title}`}

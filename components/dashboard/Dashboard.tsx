@@ -14,6 +14,7 @@ import AddAssignmentModal from "./AddAssignmentModal"
 import ProfileCenter from "./ProfileCenter"
 import AnimatedBackground from "../ui/AnimatedBackground"
 import { deleteCourseImages } from "../../lib/courseImages"
+import { formatDate } from "../../lib/dates"
 import {
   AssignmentsSkeleton,
   CalendarSkeleton,
@@ -348,17 +349,17 @@ export default function Dashboard({ email, logout }: Props) {
 
             {/* Courses Panel */}
             <div className={`${panel} p-6`}>
-              <div className="mb-5 flex items-center justify-between gap-4">
+              <div className="mb-3 flex min-h-9 items-center justify-between gap-4">
                 <h2 className="text-lg font-semibold text-ink">Courses</h2>
                 <AddCourseModal userId={userId} refreshCourses={fetchCourses} />
               </div>
 
-              <div className="divide-y divide-line">
+              <div>
                 {filteredCourses.length > 0 ? filteredCourses.map((course) => (
                   <div
                     key={course.id}
                     onClick={() => setSelectedCourseId(course.id)}
-                    className="-mx-3 cursor-pointer rounded-lg px-3 py-4 transition-colors hover:bg-paper"
+                    className="relative -mx-3 cursor-pointer rounded-lg px-3 py-4 transition-colors after:absolute after:inset-x-3 after:bottom-0 after:h-px after:bg-line last:after:hidden hover:bg-paper"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
@@ -408,16 +409,18 @@ export default function Dashboard({ email, logout }: Props) {
 
             {/* Tasks */}
             <div className={`${panel} h-fit p-6`}>
-              <h2 className="mb-4 text-lg font-semibold text-ink">Upcoming tasks</h2>
-              <AddAssignmentModal userId={userId} refreshAssignments={fetchAssignments} />
-              <div className="mt-4 divide-y divide-line">
+              <div className="mb-3 flex min-h-9 items-center justify-between gap-4">
+                <h2 className="text-lg font-semibold text-ink">Upcoming tasks</h2>
+                <AddAssignmentModal userId={userId} refreshAssignments={fetchAssignments} />
+              </div>
+              <div className="divide-y divide-line">
                 {filteredAssignments.length > 0 ? filteredAssignments.map((assignment) => (
                   <div key={assignment.id} className="flex items-center justify-between gap-3 py-3">
                     <div className="min-w-0">
                       <p className={`truncate text-sm font-medium ${assignment.completed ? "text-ink-muted line-through" : "text-ink"}`}>
                         {assignment.title}
                       </p>
-                      <p className="mt-0.5 text-xs text-ink-muted">Due {assignment.due_date}</p>
+                      <p className="mt-0.5 text-xs text-ink-muted">Due {formatDate(assignment.due_date)}</p>
                     </div>
                     <div className="flex shrink-0 items-center gap-1.5">
                       <button

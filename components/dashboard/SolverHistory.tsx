@@ -7,11 +7,12 @@ import { supabase } from "../../lib/supabase"
 import { getCurrentUser } from "../../lib/auth"
 import type { SolvedQuestion } from "../../lib/solvedHistory"
 import { Skeleton, SolutionSkeleton } from "../ui/Skeleton"
+import { formatDate as formatDateShared } from "../../lib/dates"
 
 const RichText = dynamic(() => import("../ui/RichText"), { loading: () => <SolutionSkeleton /> })
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })
+  return formatDateShared(iso, { weekday: false })
 }
 
 export default function SolverHistory({ refreshKey }: { refreshKey: number }) {

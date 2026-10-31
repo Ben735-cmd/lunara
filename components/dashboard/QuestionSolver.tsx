@@ -7,6 +7,7 @@ import CameraCapture from "./CameraCapture"
 import SolverHistory from "./SolverHistory"
 import { makeThumbnail, saveSolvedQuestion, titleFromSolution } from "../../lib/solvedHistory"
 import { SolutionSkeleton } from "../ui/Skeleton"
+import PageHeader from "../ui/PageHeader"
 
 // Maths rendering is large, so it only loads once there is an answer to show.
 const RichText = dynamic(() => import("../ui/RichText"), { loading: () => <SolutionSkeleton /> })
@@ -91,12 +92,10 @@ export default function QuestionSolver() {
   return (
     <section className="w-full flex-1 overflow-y-auto px-5 pb-8 pt-[88px] md:px-12 md:py-11">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-semibold tracking-tight text-ink">Question solver</h1>
-        <p className="mt-2 text-sm text-ink-muted">
-          Upload a PDF, Word document, or a photo, or point your camera at a question, and get a full solution.
-        </p>
-      </div>
+      <PageHeader
+        title="Question solver"
+        subtitle="Upload a PDF, Word document, or a photo, or point your camera at a question, and get a full solution."
+      />
 
       <div role="tablist" aria-label="Solver" className="mt-6 inline-flex gap-1 rounded-lg border border-line bg-surface p-1">
         {([["new", "New question"], ["history", "History"]] as const).map(([id, label]) => (

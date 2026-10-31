@@ -5,6 +5,7 @@ import { AlertTriangle, ExternalLink, FileText, Plus, Search, Trash2 } from "luc
 import { supabase } from "../../lib/supabase"
 import { getCurrentUser } from "../../lib/auth"
 import { PapersSkeleton } from "../ui/Skeleton"
+import PageHeader from "../ui/PageHeader"
 
 type Paper = {
   id: string
@@ -216,20 +217,20 @@ export default function PastPapers() {
 
   return (
     <section className="w-full flex-1 overflow-y-auto px-5 pb-8 pt-[88px] md:px-12 md:py-11">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight text-ink">Past papers</h1>
-          <p className="mt-2 text-sm text-ink-muted">Practise with papers from previous years, matched to your courses.</p>
-        </div>
-        {isAdmin && !adding && (
-          <button
-            onClick={() => setAdding(true)}
-            className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-on-accent transition-colors hover:bg-accent-strong"
-          >
-            <Plus size={16} aria-hidden="true" /> Add papers
-          </button>
-        )}
-      </div>
+      <PageHeader
+        title="Past papers"
+        subtitle="Practise with papers from previous years, matched to your courses."
+        action={
+          isAdmin && !adding ? (
+            <button
+              onClick={() => setAdding(true)}
+              className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-on-accent transition-colors hover:bg-accent-strong"
+            >
+              <Plus size={16} aria-hidden="true" /> Add papers
+            </button>
+          ) : undefined
+        }
+      />
 
       {error && (
         <div role="alert" className="mt-6 flex items-start gap-2 rounded-lg bg-danger-tint px-3.5 py-3 text-sm text-danger">
@@ -321,8 +322,8 @@ export default function PastPapers() {
       )}
 
       {/* Filters */}
-      <div className="mt-8 flex flex-wrap items-center gap-3">
-        <div className="relative min-w-[220px] flex-1">
+      <div className="mt-8 grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:items-center">
+        <div className="relative col-span-2 sm:min-w-[220px] sm:flex-1">
           <Search size={18} aria-hidden="true" className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-muted" />
           <input
             type="text"
@@ -341,7 +342,7 @@ export default function PastPapers() {
           <option value="all">All exam types</option>
           {EXAM_TYPES.map((t) => <option key={t}>{t}</option>)}
         </select>
-        <div role="tablist" aria-label="Which papers" className="flex gap-1 rounded-lg border border-line bg-surface p-1">
+        <div role="tablist" aria-label="Which papers" className="col-span-2 flex gap-1 rounded-lg border border-line bg-surface p-1 sm:col-auto [&>button]:flex-1 [&>button]:whitespace-nowrap sm:[&>button]:flex-none">
           {([["mine", "My courses"], ["all", "All papers"]] as const).map(([id, label]) => (
             <button
               key={id}

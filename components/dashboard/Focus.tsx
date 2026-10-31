@@ -6,6 +6,7 @@ import { getCurrentUser } from "../../lib/auth"
 import { MODE_LABEL, cleanSettings, formatClock, type Mode } from "../../lib/pomodoro"
 import { useFocus } from "../focus/FocusProvider"
 import ReminderCard from "../ui/ReminderCard"
+import PageHeader from "../ui/PageHeader"
 
 const panel = "rounded-xl border border-line bg-surface p-6"
 const inputClass =
@@ -75,19 +76,19 @@ export default function Focus({ backTo }: { backTo?: { label: string; onBack: ()
           <span className="truncate">{backTo.label}</span>
         </button>
       )}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-3xl font-semibold tracking-tight text-ink">Focus</h1>
-        <button
-          onClick={() => (showSettings ? setShowSettings(false) : openSettings())}
-          aria-expanded={showSettings}
-          className="inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-4 py-2 text-sm font-medium text-ink transition-colors hover:bg-paper"
-        >
-          <SettingsIcon size={16} aria-hidden="true" /> Timer settings
-        </button>
-      </div>
-      <p className="mt-2 max-w-xl text-sm text-ink-muted">
-        Work in focused blocks with short breaks in between. Finished blocks are saved so you can see your week.
-      </p>
+      <PageHeader
+        title="Focus"
+        subtitle="Work in focused blocks with short breaks in between. Finished blocks are saved so you can see your week."
+        action={
+          <button
+            onClick={() => (showSettings ? setShowSettings(false) : openSettings())}
+            aria-expanded={showSettings}
+            className="inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-4 py-2 text-sm font-medium text-ink transition-colors hover:bg-paper"
+          >
+            <SettingsIcon size={16} aria-hidden="true" /> <span className="sm:hidden">Settings</span><span className="hidden sm:inline">Timer settings</span>
+          </button>
+        }
+      />
 
       {savedNote && !showSettings && (
         <p role="status" className="mt-4 inline-flex items-center gap-2 rounded-lg bg-accent-tint px-3.5 py-2 text-sm font-medium text-accent-strong">
@@ -96,7 +97,7 @@ export default function Focus({ backTo }: { backTo?: { label: string; onBack: ()
       )}
 
       {showSettings && (
-        <div className={`${panel} mt-6`}>
+        <div className={`${panel} mt-8`}>
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-ink">Timer settings</h2>
             <button
@@ -176,7 +177,8 @@ export default function Focus({ backTo }: { backTo?: { label: string; onBack: ()
                   timer.mode === m ? "bg-surface text-ink shadow-sm" : "text-ink-muted hover:text-ink"
                 }`}
               >
-                {MODE_LABEL[m]}
+                <span className="sm:hidden">{m === "focus" ? "Focus" : m === "short" ? "Short" : "Long"}</span>
+                <span className="hidden sm:inline">{MODE_LABEL[m]}</span>
               </button>
             ))}
           </div>
