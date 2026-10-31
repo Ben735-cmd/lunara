@@ -139,7 +139,7 @@ export default function FocusProvider({ children }: { children: ReactNode }) {
     if (!document.hidden || typeof Notification === "undefined" || Notification.permission !== "granted") return
     try {
       const reg = await navigator.serviceWorker?.getRegistration()
-      await reg?.showNotification(title, { body, tag: "pomodoro", icon: "/icon-192.png" })
+      await reg?.showNotification(title, { body, tag: "pomodoro", icon: "/icons/icon-192x192.png" })
     } catch {
       // ignore: the server alert or the chime covers it
     }
