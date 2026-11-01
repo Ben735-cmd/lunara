@@ -89,7 +89,7 @@ export default function TodayCard({
   const focusRunning = timer.running && timer.mode === "focus"
 
   return (
-    <section aria-labelledby="today-title" className="mt-8 rounded-xl border border-line bg-surface p-6">
+    <section aria-labelledby="today-title" className="mt-6 rounded-xl border border-line bg-surface p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 id="today-title" className="text-lg font-semibold text-ink">Today</h2>
