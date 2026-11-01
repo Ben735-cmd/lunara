@@ -1,60 +1,97 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Plus, Trash2 } from "lucide-react"
 import { supabase } from "../../lib/supabase"
 import { getCurrentUser } from "../../lib/auth"
 import { NotesSkeleton } from "../ui/Skeleton"
 import PageHeader from "../ui/PageHeader"
 import { formatDate } from "../../lib/dates"
-
-type Note = {
-  id: string
-  title: string
-  content: string
-  created_at: string
-}
+import ErrorState from "../ui/ErrorState"
+import { useOnline } from "../../lib/online"
+import {
+  cacheServerNotes, flushQueue, isNetworkError, pendingCount, queueAdd, queueDelete, visibleNotes, type Note,
+} from "../../lib/offlineNotes"
 
 export default function Notes() {
   const [notes, setNotes] = useState<Note[]>([])
   const [userId, setUserId] = useState("")
   const [loaded, setLoaded] = useState(false)
+  const [loadFailed, setLoadFailed] = useState(false)
+  const [waiting, setWaiting] = useState(0)
   const [title, setTitle] = useState("")
   const [content, setContent] = useState("")
   const [adding, setAdding] = useState(false)
   const [saving, setSaving] = useState(false)
   const [selectedNote, setSelectedNote] = useState<Note | null>(null)
+  const online = useOnline()
 
-  async function fetchNotes() {
+  const refreshFromCache = useCallback((uid: string) => {
+    setNotes(visibleNotes(uid))
+    setWaiting(pendingCount(uid))
+  }, [])
+
+  const fetchNotes = useCallback(async () => {
     const user = await getCurrentUser()
     if (!user) { setLoaded(true); return }
     setUserId(user.id)
-    const { data } = await supabase
+    // Show what is saved on this device straight away, then refresh from the server.
+    refreshFromCache(user.id)
+    setLoaded(true)
+    if (!navigator.onLine) return
+
+    await flushQueue(user.id, {
+      insert: async (n) => (await supabase.from("notes").insert([{ ...n, user_id: user.id }])).error,
+      remove: async (id) => (await supabase.from("notes").delete().eq("id", id)).error,
+    })
+    const { data, error } = await supabase
       .from("notes")
       .select("*")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
-    setNotes(data || [])
-    setLoaded(true)
-  }
+    if (error) {
+      setLoadFailed(visibleNotes(user.id).length === 0)
+      return
+    }
+    setLoadFailed(false)
+    cacheServerNotes(user.id, data || [])
+    refreshFromCache(user.id)
+  }, [refreshFromCache])
 
-  useEffect(() => { fetchNotes() }, [])
+  useEffect(() => { fetchNotes() }, [fetchNotes])
+  // Upload anything written offline as soon as the connection returns.
+  useEffect(() => { if (online) fetchNotes() }, [online, fetchNotes])
 
   async function saveNote() {
     if (!title.trim() || !content.trim()) return
     setSaving(true)
-    await supabase.from("notes").insert([{ title, content, user_id: userId }])
+    const { error } = navigator.onLine
+      ? await supabase.from("notes").insert([{ title, content, user_id: userId }])
+      : { error: { message: "offline" } }
+    if (error && !isNetworkError(error)) {
+      setSaving(false)
+      return
+    }
+    if (error) queueAdd(userId, title, content)
     setTitle("")
     setContent("")
     setAdding(false)
     setSaving(false)
-    fetchNotes()
+    if (error) refreshFromCache(userId)
+    else fetchNotes()
   }
 
   async function deleteNote(id: string) {
-    await supabase.from("notes").delete().eq("id", id)
     if (selectedNote?.id === id) setSelectedNote(null)
-    fetchNotes()
+    if (id.startsWith("local-") || !navigator.onLine) {
+      queueDelete(userId, id)
+      refreshFromCache(userId)
+      return
+    }
+    const { error } = await supabase.from("notes").delete().eq("id", id)
+    if (error && isNetworkError(error)) queueDelete(userId, id)
+    if (error) refreshFromCache(userId)
+    else fetchNotes()
   }
 
   const inputClass =
@@ -77,6 +114,12 @@ export default function Notes() {
           </button>
         }
       />
+
+      {waiting > 0 && (
+        <p role="status" className="mt-4 rounded-lg bg-accent-tint px-4 py-2.5 text-sm text-accent-strong">
+          {waiting} {waiting === 1 ? "change is" : "changes are"} saved on this device and will sync when you are back online.
+        </p>
+      )}
 
       {/* Add note form */}
       {adding && (
@@ -125,7 +168,9 @@ export default function Notes() {
       )}
 
       {/* Notes grid */}
-      {notes.length === 0 && !adding ? (
+      {loadFailed && notes.length === 0 ? (
+        <ErrorState title="We couldn't load your notes" offline={!online} onRetry={fetchNotes} />
+      ) : notes.length === 0 && !adding ? (
         <div className="mt-8 rounded-xl border border-line bg-surface px-6 py-14 text-center">
           <p className="font-medium text-ink">No notes yet</p>
           <p className="mt-1.5 text-sm text-ink-muted">Choose New note to get started.</p>
@@ -149,6 +194,9 @@ export default function Notes() {
                   >
                     {note.title}
                   </button>
+                  {note.pending && (
+                    <span className="shrink-0 rounded-full bg-accent-tint px-2 py-0.5 text-[0.7rem] font-medium text-accent-strong">Not synced</span>
+                  )}
                   <button
                     onClick={() => deleteNote(note.id)}
                     aria-label={`Delete ${note.title}`}

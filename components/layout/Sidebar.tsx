@@ -88,6 +88,14 @@ export default function Sidebar({ logout, onSelectCourse, selectedCourseId, acti
     return () => window.removeEventListener("resize", checkSize)
   }, [])
 
+  // Escape closes the mobile drawer
+  useEffect(() => {
+    if (!isMobile || !mobileOpen) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setMobileOpen(false) }
+    document.addEventListener("keydown", onKey)
+    return () => document.removeEventListener("keydown", onKey)
+  }, [isMobile, mobileOpen])
+
   // Lock background scroll while the mobile drawer is open
   useEffect(() => {
     if (isMobile && mobileOpen) {

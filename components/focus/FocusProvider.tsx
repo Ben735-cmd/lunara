@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import { Check } from "lucide-react"
 import { supabase } from "../../lib/supabase"
+import { useDialog } from "../../lib/useDialog"
 import CelebrationHost from "../ui/CelebrationHost"
 import { celebrate } from "../../lib/celebrate"
 import { getCurrentUser } from "../../lib/auth"
@@ -80,6 +81,7 @@ export default function FocusProvider({ children }: { children: ReactNode }) {
   const [rows, setRows] = useState<FocusRow[]>([])
   const [statsFailed, setStatsFailed] = useState(false)
   const [done, setDone] = useState<Done | null>(null)
+  const doneRef = useDialog<HTMLDivElement>(!!done, () => setDone(null))
 
   const timerRef = useRef(timer)
   const settingsRef = useRef(settings)
@@ -328,6 +330,7 @@ export default function FocusProvider({ children }: { children: ReactNode }) {
       {done && (
         <div className="anim-fade fixed inset-0 z-[70] flex items-center justify-center bg-black/40 px-5" onClick={() => setDone(null)}>
           <div
+            ref={doneRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="done-title"

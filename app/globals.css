@@ -214,3 +214,4 @@ button:not(:disabled):active { transform: scale(0.97); }
 @media (hover: hover) {
   .logo-link:hover .logo-mark > img { animation-play-state: paused; transform: rotate(-14deg) scale(1.12); }
 }
+main > section:focus { outline: none; }

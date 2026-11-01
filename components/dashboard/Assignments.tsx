@@ -1,5 +1,7 @@
 "use client"
 
+import ErrorState from "../ui/ErrorState"
+import { useOnline } from "../../lib/online"
 import { celebrate } from "../../lib/celebrate"
 import { useEffect, useState } from "react"
 import { AlertTriangle, CalendarCheck, Check, ClipboardList, Plus, Search, Trash2 } from "lucide-react"
@@ -20,6 +22,8 @@ export default function Assignments() {
   const [assignments, setAssignments] = useState<Assignment[]>([])
   const [userId, setUserId] = useState("")
   const [loaded, setLoaded] = useState(false)
+  const [loadFailed, setLoadFailed] = useState(false)
+  const online = useOnline()
   const [adding, setAdding] = useState(false)
   const [title, setTitle] = useState("")
   const [dueDate, setDueDate] = useState("")
@@ -31,12 +35,13 @@ export default function Assignments() {
     const user = await getCurrentUser()
     if (!user) { setLoaded(true); return }
     setUserId(user.id)
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("assignments")
       .select("*")
       .eq("user_id", user.id)
       .order("due_date", { ascending: true })
-    setAssignments(data || [])
+    setLoadFailed(!!error)
+    if (!error) setAssignments(data || [])
     setLoaded(true)
   }
 
@@ -219,6 +224,9 @@ export default function Assignments() {
       </div>
 
       {/* Assignments list */}
+      {loadFailed && assignments.length === 0 ? (
+        <ErrorState title="We couldn't load your assignments" offline={!online} onRetry={fetchAssignments} />
+      ) : (
       <div className="mt-6 overflow-hidden rounded-xl border border-line bg-surface">
         {filtered.length === 0 ? (
           <div className="px-6 py-14 text-center">
@@ -278,6 +286,7 @@ export default function Assignments() {
           </ul>
         )}
       </div>
+      )}
     </section>
   )
 }

@@ -1,5 +1,7 @@
 "use client"
 
+import ErrorState from "../ui/ErrorState"
+import { useOnline } from "../../lib/online"
 import { useEffect, useState } from "react"
 import { Bell, BellOff, CalendarDays, ChevronLeft, ChevronRight, Clock, Plus, Trash2 } from "lucide-react"
 import { supabase } from "../../lib/supabase"
@@ -59,6 +61,8 @@ export default function Calendar() {
   const [sessions, setSessions] = useState<StudySession[]>([])
   const [userId, setUserId] = useState("")
   const [loaded, setLoaded] = useState(false)
+  const [loadFailed, setLoadFailed] = useState(false)
+  const online = useOnline()
   const [today] = useState(new Date())
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth())
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear())
@@ -81,11 +85,11 @@ export default function Calendar() {
     if (!user) { setLoaded(true); return }
     setUserId(user.id)
 
-    const { data: aData } = await supabase.from("assignments").select("*").eq("user_id", user.id)
-    setAssignments(aData || [])
-
-    const { data: sData } = await supabase.from("study_sessions").select("*").eq("user_id", user.id)
-    setSessions(sData || [])
+    const { data: aData, error: aError } = await supabase.from("assignments").select("*").eq("user_id", user.id)
+    const { data: sData, error: sError } = await supabase.from("study_sessions").select("*").eq("user_id", user.id)
+    setLoadFailed(!!aError || !!sError)
+    if (!aError) setAssignments(aData || [])
+    if (!sError) setSessions(sData || [])
     setLoaded(true)
   }
 
@@ -210,6 +214,10 @@ export default function Calendar() {
           </button>
         }
       />
+
+      {loadFailed && assignments.length === 0 && sessions.length === 0 && (
+        <ErrorState title="We couldn't load your calendar" offline={!online} onRetry={fetchData} />
+      )}
 
       {/* Add session form */}
       {adding && (

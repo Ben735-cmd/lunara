@@ -1,14 +1,25 @@
 "use client"
 
+import { useEffect } from "react"
+import { reportError } from "../lib/errorLog"
+
 // Shown instead of a blank white page if something fails while the app loads.
-export default function Error({ reset }: { error: Error; reset: () => void }) {
+export default function Error({ error, unstable_retry }: { error: Error & { digest?: string }; unstable_retry: () => void }) {
+  useEffect(() => { reportError(error, "route-error") }, [error])
   return (
-    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: 24, textAlign: "center", fontFamily: "system-ui, sans-serif" }}>
-      <h1 style={{ fontSize: 20, fontWeight: 600 }}>Something went wrong</h1>
-      <p style={{ fontSize: 14, opacity: 0.7 }}>Try again, or update your browser if this keeps happening.</p>
-      <button onClick={() => reset()} style={{ padding: "10px 18px", borderRadius: 8, background: "#0e7c5a", color: "#fff", border: 0, fontSize: 14 }}>
-        Reload
-      </button>
-    </div>
+    <main className="flex min-h-screen flex-col items-center justify-center gap-3 bg-paper px-6 text-center text-ink">
+      <h1 className="text-2xl font-semibold tracking-tight">Something went wrong</h1>
+      <p className="max-w-sm text-sm text-ink-muted">
+        Lunara hit a problem. Your notes and tasks are safe. Try again, and if it keeps happening, reload the page.
+      </p>
+      <div className="mt-2 flex gap-3">
+        <button onClick={() => unstable_retry()} className="rounded-lg bg-accent px-5 py-2.5 text-sm font-medium text-on-accent hover:bg-accent-strong">
+          Try again
+        </button>
+        <button onClick={() => window.location.reload()} className="rounded-lg border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink hover:bg-paper">
+          Reload
+        </button>
+      </div>
+    </main>
   )
 }

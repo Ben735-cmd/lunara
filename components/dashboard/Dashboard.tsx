@@ -1,5 +1,7 @@
 "use client"
 import CountUp from "../ui/CountUp"
+import OfflineBanner from "../ui/OfflineBanner"
+import { trackScreen } from "../../lib/analytics"
 import { celebrate } from "../../lib/celebrate"
 import AITest from "../ai/AITest"
 import { useEffect, useState } from "react"
@@ -190,6 +192,8 @@ export default function Dashboard({ email, logout }: Props) {
     a.title.toLowerCase().includes(query)
   )
 
+  useEffect(() => { if (!loading) trackScreen(selectedCourseId ? "Course" : activeNav) }, [loading, activeNav, selectedCourseId])
+
   if (loading) {
     return <DashboardLoading dark={isDark} />
   }
@@ -207,7 +211,17 @@ export default function Dashboard({ email, logout }: Props) {
 
   return (
     <FocusProvider>
+    <OfflineBanner />
     <main className={`${isDark ? "dark" : ""} relative isolate flex min-h-screen bg-paper text-ink`}>
+    <a
+      href="#"
+      onClick={(e) => {
+        e.preventDefault()
+        const target = document.querySelector<HTMLElement>("main > section")
+        target?.setAttribute("tabindex", "-1")
+        target?.focus()
+      }}
+      className="fixed left-3 top-3 z-[200] -translate-y-20 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-on-accent focus:translate-y-0">Skip to content</a>
       <AnimatedBackground />
       <style>{`
         @keyframes toastIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }

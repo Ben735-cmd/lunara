@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next"
 import Script from "next/script"
+import { Analytics } from "@vercel/analytics/next"
+import ErrorReporter from "../components/ui/ErrorReporter"
 import { Instrument_Sans } from "next/font/google"
 import "./globals.css"
 
@@ -85,6 +87,8 @@ export default function RootLayout({
           }}
         />
         {children}
+        <ErrorReporter />
+        <Analytics />
       </body>
     </html>
   )

@@ -1,5 +1,6 @@
 "use client"
 
+import { useDialog } from "../../lib/useDialog"
 import { useRef, useState } from "react"
 import { FileText } from "lucide-react"
 import { supabase } from "../../lib/supabase"
@@ -19,6 +20,7 @@ function formatSize(bytes: number) {
 
 export default function AddCourseModal({ userId, refreshCourses }: Props) {
   const [open, setOpen] = useState(false)
+  const dialogRef = useDialog<HTMLDivElement>(open, () => closeForm())
   const [title, setTitle] = useState("")
   const [code, setCode] = useState("")
   const [file, setFile] = useState<File | null>(null)
@@ -119,7 +121,7 @@ export default function AddCourseModal({ userId, refreshCourses }: Props) {
 
       {open && (
         <div className="anim-fade fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div role="dialog" aria-modal="true" aria-labelledby="new-course-title" className="anim-pop w-full max-w-md rounded-2xl border border-line bg-surface p-6">
+          <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="new-course-title" className="anim-pop w-full max-w-md rounded-2xl border border-line bg-surface p-6">
             <h2 id="new-course-title" className="text-xl font-semibold text-ink">New course</h2>
 
             <div className="mt-6 space-y-4">

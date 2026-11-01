@@ -156,7 +156,7 @@ export default function TodayCard({
                     key={item.key}
                     className={`flex items-start gap-3 rounded-lg border px-3.5 py-3 ${
                       live ? "border-accent bg-accent-tint" : "border-line bg-paper"
-                    } ${over ? "opacity-60" : ""}`}
+                    }`}
                   >
                     <span className="mt-0.5 shrink-0 text-ink-muted">
                       {item.kind === "class" ? <CalendarClock size={16} aria-hidden="true" /> : <BookOpen size={16} aria-hidden="true" />}
@@ -167,7 +167,7 @@ export default function TodayCard({
                         {live && <span className="ml-2 rounded-full bg-accent px-1.5 py-0.5 text-[0.65rem] text-on-accent">Now</span>}
                         {!live && !over && i === nextIndex && <span className="ml-2 rounded-full bg-surface px-1.5 py-0.5 text-[0.65rem] text-ink-muted">Next</span>}
                       </p>
-                      <p className="mt-0.5 break-words text-sm font-medium text-ink">{item.title}</p>
+                      <p className={`mt-0.5 break-words text-sm font-medium ${over ? "text-ink-muted" : "text-ink"}`}>{item.title}</p>
                       {item.place && (
                         <p className="mt-0.5 flex items-center gap-1 text-xs text-ink-muted">
                           <MapPin size={12} aria-hidden="true" /> {item.place}

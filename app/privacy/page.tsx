@@ -47,6 +47,7 @@ export default function PrivacyPage() {
 
       <Section title="Cookies and local storage">
         <p>Your browser stores a sign-in session so you stay signed in. The app also keeps a cached copy of its pages so it can load faster and work as an installable app. Advertising cookies come from Google AdSense as described above.</p>
+        <p><strong>Usage and crash reports.</strong> To fix problems and see which screens are used, the app counts screen visits using a random id stored on your device, with no name, email or account attached. If the app crashes, the error message and the page it happened on are saved so we can fix it. We also use Vercel Analytics, which counts page visits without cookies or personal profiles.</p>
       </Section>
 
       <Section title="Keeping your data">
