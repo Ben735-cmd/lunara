@@ -1,10 +1,11 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { BookOpen, CalendarClock, Check, MapPin, Play, Timer } from "lucide-react"
+import { BookOpen, CalendarClock, Check, MapPin, Pause, Play, Square } from "lucide-react"
 import { supabase } from "../../lib/supabase"
 import { formatDateLong } from "../../lib/dates"
 import { hhmm, type ClassRow } from "../../lib/timetable"
+import { MODE_LABEL, formatClock } from "../../lib/pomodoro"
 import { useFocus } from "../focus/FocusProvider"
 
 type Assignment = { id: string; title: string; due_date: string; completed: boolean }
@@ -33,7 +34,7 @@ export default function TodayCard({
   onToggleAssignment: (id: string, completed: boolean) => void
   onOpenTimetable: () => void
 }) {
-  const { stats, timer, start } = useFocus()
+  const { stats, timer, remaining, total, start, pause, reset } = useFocus()
   const [classes, setClasses] = useState<ClassRow[]>([])
   const [sessions, setSessions] = useState<Session[]>([])
   const [loaded, setLoaded] = useState(false)
@@ -86,7 +87,7 @@ export default function TodayCard({
   )
 
   const nextIndex = schedule.findIndex((i) => minutes(i.end) > nowMin)
-  const focusRunning = timer.running && timer.mode === "focus"
+  const started = timer.running || remaining < total
 
   return (
     <section aria-labelledby="today-title" className="mt-6 rounded-xl border border-line bg-surface p-6">
@@ -95,14 +96,40 @@ export default function TodayCard({
           <h2 id="today-title" className="text-lg font-semibold text-ink">Today</h2>
           <p className="mt-0.5 text-sm text-ink-muted">{formatDateLong(now)}</p>
         </div>
-        <button
-          onClick={() => start()}
-          disabled={timer.running}
-          className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-on-accent transition-colors hover:bg-accent-strong disabled:cursor-default disabled:opacity-70"
-        >
-          {timer.running ? <Timer size={16} aria-hidden="true" /> : <Play size={16} aria-hidden="true" />}
-          {focusRunning ? "Focus running" : timer.running ? "Timer running" : "Start focus"}
-        </button>
+        {started ? (
+          <div role="group" aria-label="Focus timer" className="flex items-center gap-1 rounded-full border border-line bg-paper py-1 pl-4 pr-1">
+            <div className="mr-2">
+              <p role="timer" aria-label={`${formatClock(remaining)} left, ${MODE_LABEL[timer.mode]}`} className="text-base font-semibold tabular-nums leading-tight text-ink">
+                {formatClock(remaining)}
+              </p>
+              <p className="text-[0.7rem] leading-tight text-ink-muted">
+                {timer.mode !== "focus" ? MODE_LABEL[timer.mode] : timer.running ? "Focusing" : "Paused"}
+              </p>
+            </div>
+            <button
+              onClick={() => (timer.running ? pause() : start())}
+              aria-label={timer.running ? "Pause timer" : "Resume timer"}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-accent text-on-accent transition-colors hover:bg-accent-strong"
+            >
+              {timer.running ? <Pause size={15} aria-hidden="true" /> : <Play size={15} aria-hidden="true" />}
+            </button>
+            <button
+              onClick={() => reset()}
+              aria-label="Stop timer"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-surface hover:text-danger"
+            >
+              <Square size={15} aria-hidden="true" />
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => start()}
+            className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-on-accent transition-colors hover:bg-accent-strong"
+          >
+            <Play size={16} aria-hidden="true" />
+            Start focus
+          </button>
+        )}
       </div>
 
       <div className="mt-5 grid gap-6 md:grid-cols-2">
