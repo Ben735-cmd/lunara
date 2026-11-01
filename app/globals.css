@@ -186,3 +186,31 @@ button:not(:disabled):active { transform: scale(0.97); }
   .lift { transition: transform 0.2s ease, box-shadow 0.2s ease; }
   .lift:hover { transform: translateY(-2px); box-shadow: 0 8px 24px -12px rgb(0 0 0 / 0.25); }
 }
+
+/* Confetti burst (components/ui/CelebrationHost.tsx) */
+@keyframes confetti-fly {
+  0% { opacity: 1; transform: translate3d(0, 0, 0) rotate(0deg) scale(0.4); }
+  15% { opacity: 1; }
+  70% { opacity: 1; }
+  100% { opacity: 0; transform: translate3d(var(--dx), calc(var(--dy) + 140px), 0) rotate(var(--rot)) scale(1); }
+}
+.confetti-piece { animation: confetti-fly 1.5s cubic-bezier(0.1, 0.7, 0.3, 1) both; will-change: transform, opacity; }
+
+/* Logo: floats gently, glows softly, and tilts when you point at it (components/ui/Logo.tsx) */
+@keyframes logo-float {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
+  50% { transform: translate3d(0, -3px, 0) rotate(-3deg); }
+}
+@keyframes logo-glow {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent); }
+  50% { box-shadow: 0 0 18px 2px color-mix(in srgb, var(--accent) 45%, transparent); }
+}
+@keyframes logo-in {
+  from { opacity: 0; transform: scale(0.6) rotate(-25deg); }
+  to { opacity: 1; transform: none; }
+}
+.logo-mark { display: inline-flex; border-radius: 22%; animation: logo-in 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both, logo-glow 4.5s ease-in-out 0.8s infinite; }
+.logo-mark > img { animation: logo-float 5.5s ease-in-out 0.8s infinite; transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@media (hover: hover) {
+  .logo-link:hover .logo-mark > img { animation-play-state: paused; transform: rotate(-14deg) scale(1.12); }
+}

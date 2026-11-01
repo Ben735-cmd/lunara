@@ -3,6 +3,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import { Check } from "lucide-react"
 import { supabase } from "../../lib/supabase"
+import CelebrationHost from "../ui/CelebrationHost"
+import { celebrate } from "../../lib/celebrate"
 import { getCurrentUser } from "../../lib/auth"
 import { getPushState, type PushState } from "../../lib/push"
 import {
@@ -170,6 +172,7 @@ export default function FocusProvider({ children }: { children: ReactNode }) {
         message: PRAISE[Math.floor(Math.random() * PRAISE.length)],
         autoStarted: auto,
       })
+      celebrate({ big: true })
       if (userRef.current) {
         supabase
           .from("focus_sessions")
@@ -321,6 +324,7 @@ export default function FocusProvider({ children }: { children: ReactNode }) {
   return (
     <FocusContext.Provider value={api}>
       {children}
+      <CelebrationHost />
       {done && (
         <div className="anim-fade fixed inset-0 z-[70] flex items-center justify-center bg-black/40 px-5" onClick={() => setDone(null)}>
           <div

@@ -6,6 +6,7 @@ import { supabase } from "../../lib/supabase"
 import { formatDateLong } from "../../lib/dates"
 import { hhmm, type ClassRow } from "../../lib/timetable"
 import { MODE_LABEL, formatClock } from "../../lib/pomodoro"
+import { celebrate } from "../../lib/celebrate"
 import { useFocus } from "../focus/FocusProvider"
 
 type Assignment = { id: string; title: string; due_date: string; completed: boolean }
@@ -194,7 +195,7 @@ export default function TodayCard({
                 return (
                   <li key={a.id} className="flex items-center gap-3 rounded-lg border border-line bg-paper px-3.5 py-3">
                     <button
-                      onClick={() => onToggleAssignment(a.id, a.completed)}
+                      onClick={(e) => { celebrate({ x: e.clientX, y: e.clientY }); onToggleAssignment(a.id, a.completed) }}
                       role="checkbox"
                       aria-checked={false}
                       aria-label={`Mark ${a.title} as done`}

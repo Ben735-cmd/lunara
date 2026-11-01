@@ -1,5 +1,6 @@
 "use client"
 import CountUp from "../ui/CountUp"
+import { celebrate } from "../../lib/celebrate"
 import AITest from "../ai/AITest"
 import { useEffect, useState } from "react"
 import dynamic from "next/dynamic"
@@ -426,7 +427,7 @@ export default function Dashboard({ email, logout }: Props) {
                     </div>
                     <div className="flex shrink-0 items-center gap-1.5">
                       <button
-                        onClick={() => toggleAssignment(assignment.id, assignment.completed)}
+                        onClick={(e) => { if (!assignment.completed) celebrate({ x: e.clientX, y: e.clientY }); toggleAssignment(assignment.id, assignment.completed) }}
                         className={smallButton}
                       >
                         {assignment.completed ? "Undo" : "Done"}

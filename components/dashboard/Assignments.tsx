@@ -1,5 +1,6 @@
 "use client"
 
+import { celebrate } from "../../lib/celebrate"
 import { useEffect, useState } from "react"
 import { AlertTriangle, CalendarCheck, Check, ClipboardList, Plus, Search, Trash2 } from "lucide-react"
 import { supabase } from "../../lib/supabase"
@@ -237,7 +238,7 @@ export default function Assignments() {
                 <li key={assignment.id} className="flex items-center justify-between gap-3 px-5 py-4">
                   <div className="flex min-w-0 flex-1 items-center gap-3.5">
                     <button
-                      onClick={() => toggleAssignment(assignment.id, assignment.completed)}
+                      onClick={(e) => { if (!assignment.completed) celebrate({ x: e.clientX, y: e.clientY }); toggleAssignment(assignment.id, assignment.completed) }}
                       role="checkbox"
                       aria-checked={assignment.completed}
                       aria-label={`Mark ${assignment.title} as ${assignment.completed ? "not done" : "done"}`}
