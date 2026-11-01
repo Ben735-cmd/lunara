@@ -9,6 +9,7 @@ import { calculateProgress, type QuizAttempt } from "../../lib/progress"
 import { applyThemeClass, initialTheme, storeTheme } from "../../lib/preferences"
 import Sidebar from "../layout/Sidebar"
 import FocusProvider from "../focus/FocusProvider"
+import TodayCard from "./TodayCard"
 import AddCourseModal from "./AddCourseModal"
 import AddAssignmentModal from "./AddAssignmentModal"
 import ProfileCenter from "./ProfileCenter"
@@ -331,8 +332,15 @@ export default function Dashboard({ email, logout }: Props) {
             </div>
           </div>
 
+          <TodayCard
+            userId={userId}
+            assignments={assignments}
+            onToggleAssignment={toggleAssignment}
+            onOpenTimetable={() => { setSelectedCourseId(null); setActiveNav("Timetable") }}
+          />
+
           {/* Stats */}
-          <div className="mt-8 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-line bg-line lg:grid-cols-4">
+          <div className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-line bg-line lg:grid-cols-4">
             {stats.map(({ label, value, Icon }) => (
               <div key={label} className="bg-surface p-5">
                 <div className="flex items-center justify-between text-ink-muted">
