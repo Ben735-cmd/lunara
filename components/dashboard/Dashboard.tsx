@@ -1,4 +1,5 @@
 "use client"
+import CountUp from "../ui/CountUp"
 import AITest from "../ai/AITest"
 import { useEffect, useState } from "react"
 import dynamic from "next/dynamic"
@@ -333,20 +334,20 @@ export default function Dashboard({ email, logout }: Props) {
           </div>
 
           {/* Stats */}
-          <div className="mt-8 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-line bg-line lg:grid-cols-4">
+          <div className="stagger mt-8 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-line bg-line lg:grid-cols-4">
             {stats.map(({ label, value, Icon }) => (
               <div key={label} className="bg-surface p-5">
                 <div className="flex items-center justify-between text-ink-muted">
                   <p className="text-sm">{label}</p>
                   <Icon size={18} aria-hidden="true" />
                 </div>
-                <p className="mt-3 text-3xl font-semibold tabular-nums text-ink">{value}</p>
+                <p className="mt-3 text-3xl font-semibold tabular-nums text-ink"><CountUp value={value} /></p>
               </div>
             ))}
           </div>
 
           {/* Main Grid */}
-          <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_340px]">
+          <div className="stagger mt-6 grid gap-6 lg:grid-cols-[1fr_340px]">
 
             {/* Courses Panel */}
             <div className={`${panel} p-6`}>
@@ -391,7 +392,7 @@ export default function Dashboard({ email, logout }: Props) {
                         className="h-1.5 flex-1 overflow-hidden rounded-full bg-line"
                       >
                         <div
-                          className="h-full rounded-full bg-accent transition-[width] duration-300"
+                          className="bar-grow h-full rounded-full bg-accent transition-[width] duration-500"
                           style={{ width: `${course.progress}%` }}
                         />
                       </div>

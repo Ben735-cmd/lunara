@@ -129,7 +129,7 @@ export default function Sidebar({ logout, onSelectCourse, selectedCourseId, acti
       {isMobile && mobileOpen && (
         <div
           onClick={() => setMobileOpen(false)}
-          className="fixed inset-0 z-40 bg-black/40"
+          className="anim-fade fixed inset-0 z-40 bg-black/40"
         />
       )}
 

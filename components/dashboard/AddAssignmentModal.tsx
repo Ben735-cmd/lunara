@@ -63,8 +63,8 @@ export default function AddAssignmentModal({
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div role="dialog" aria-modal="true" aria-labelledby="new-assignment-title" className="w-full max-w-md rounded-2xl border border-line bg-surface p-6">
+        <div className="anim-fade fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div role="dialog" aria-modal="true" aria-labelledby="new-assignment-title" className="anim-pop w-full max-w-md rounded-2xl border border-line bg-surface p-6">
             <h2 id="new-assignment-title" className="text-xl font-semibold text-ink">New assignment</h2>
 
             <div className="mt-6 space-y-4">

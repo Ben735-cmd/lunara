@@ -132,3 +132,57 @@ body {
   padding: 0.25em 0;
 }
 .rich-text .katex { font-size: 1.05em; }
+
+/* Motion: screens fade in, lists stagger, dialogs pop, buttons press. All of it is switched
+   off by the prefers-reduced-motion rule above. */
+@keyframes rise-in {
+  from { opacity: 0; transform: translate3d(0, 14px, 0); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes pop-in {
+  from { opacity: 0; transform: translate3d(0, 10px, 0) scale(0.95); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translate3d(24px, 0, 0); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes bar-grow {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+@keyframes soft-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 35%, transparent); }
+  50% { box-shadow: 0 0 0 8px transparent; }
+}
+
+/* Every screen in the dashboard eases in when you open it. */
+main > section { animation: rise-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* Children of .stagger appear one after another. */
+.stagger > * { animation: rise-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.stagger > *:nth-child(1) { animation-delay: 0.04s; }
+.stagger > *:nth-child(2) { animation-delay: 0.1s; }
+.stagger > *:nth-child(3) { animation-delay: 0.16s; }
+.stagger > *:nth-child(4) { animation-delay: 0.22s; }
+.stagger > *:nth-child(5) { animation-delay: 0.28s; }
+.stagger > *:nth-child(6) { animation-delay: 0.34s; }
+.stagger > *:nth-child(n + 7) { animation-delay: 0.4s; }
+
+.anim-fade { animation: fade-in 0.2s ease-out both; }
+.anim-pop { animation: pop-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.toast { animation: slide-in-right 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.bar-grow { transform-origin: left; animation: bar-grow 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both; }
+.pulse-ring { animation: soft-pulse 2.2s ease-in-out infinite; }
+
+/* Buttons press down, cards lift a little under the pointer. */
+button:not(:disabled), [role="button"] { transition-property: color, background-color, border-color, opacity, transform, box-shadow; transition-duration: 0.15s; }
+button:not(:disabled):active { transform: scale(0.97); }
+@media (hover: hover) {
+  .lift { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+  .lift:hover { transform: translateY(-2px); box-shadow: 0 8px 24px -12px rgb(0 0 0 / 0.25); }
+}
