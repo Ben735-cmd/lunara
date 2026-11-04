@@ -19,7 +19,7 @@ export default function AboutPage() {
       </Section>
 
       <Section title="The creator">
-        <p><strong>Ben Lubona</strong> is a second-year Computer Science student at Copperbelt University. He builds Lunara on his own, and is interested in software development and cybersecurity and governance, risk and compliance (GRC).</p>
+        <p><strong>Ben Lubona</strong> is a third-year Computer Science student at Copperbelt University. He builds Lunara on his own, and is interested in software development and cybersecurity and governance, risk and compliance (GRC).</p>
         <p>
           Email: <a href="mailto:benlubona735@gmail.com">benlubona735@gmail.com</a>
         </p>
