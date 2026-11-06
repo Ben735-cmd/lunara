@@ -43,6 +43,12 @@ GROQ_API_KEY=your-groq-api-key
 # Optional: override the Groq models (comma separated, best first)
 # GROQ_TEXT_MODELS=openai/gpt-oss-120b,qwen/qwen3.6-27b
 # GROQ_VISION_MODELS=qwen/qwen3.8-27b,qwen/qwen3.6-27b
+
+# Payments (Flutterwave). Use the TEST keys until you are ready to go live.
+# FLW_SECRET_KEY=FLWSECK_TEST-...
+# FLW_SECRET_HASH=a-long-random-string-you-also-paste-in-the-flutterwave-webhook-settings
+# SUPABASE_SERVICE_ROLE_KEY=your-service-role-key   # server only, never NEXT_PUBLIC_
+# NEXT_PUBLIC_SITE_URL=http://localhost:3000        # where Flutterwave sends students back to
 ```
 
 ### 3. Set up the database
