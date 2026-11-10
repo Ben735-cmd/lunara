@@ -1,5 +1,6 @@
 "use client"
 
+import { useConfirm } from "../ui/ConfirmProvider"
 import ErrorState from "../ui/ErrorState"
 import { useOnline } from "../../lib/online"
 import { celebrate } from "../../lib/celebrate"
@@ -24,6 +25,7 @@ export default function Assignments() {
   const [loaded, setLoaded] = useState(false)
   const [loadFailed, setLoadFailed] = useState(false)
   const online = useOnline()
+  const confirm = useConfirm()
   const [adding, setAdding] = useState(false)
   const [title, setTitle] = useState("")
   const [dueDate, setDueDate] = useState("")
@@ -63,7 +65,9 @@ export default function Assignments() {
     fetchAssignments()
   }
 
-  async function deleteAssignment(id: string) {
+  async function deleteAssignment(id: string, title: string) {
+    const ok = await confirm({ title: `Delete "${title}"?`, message: "This task will be removed for good.", confirmLabel: "Delete task" })
+    if (!ok) return
     await supabase.from("assignments").delete().eq("id", id)
     fetchAssignments()
   }
@@ -273,7 +277,7 @@ export default function Assignments() {
                   <div className="flex shrink-0 items-center gap-2">
                     <span className={`hidden rounded-md px-2.5 py-1 text-xs font-medium sm:inline ${badge.className}`}>{badge.label}</span>
                     <button
-                      onClick={() => deleteAssignment(assignment.id)}
+                      onClick={() => deleteAssignment(assignment.id, assignment.title)}
                       aria-label={`Delete ${assignment.title}`}
                       className="rounded-lg p-2 text-ink-muted transition-colors hover:bg-danger-tint hover:text-danger"
                     >

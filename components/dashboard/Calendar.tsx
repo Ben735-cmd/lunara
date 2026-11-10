@@ -1,5 +1,6 @@
 "use client"
 
+import { useConfirm } from "../ui/ConfirmProvider"
 import ErrorState from "../ui/ErrorState"
 import { useOnline } from "../../lib/online"
 import { useEffect, useState } from "react"
@@ -63,6 +64,7 @@ export default function Calendar() {
   const [loaded, setLoaded] = useState(false)
   const [loadFailed, setLoadFailed] = useState(false)
   const online = useOnline()
+  const confirm = useConfirm()
   const [today] = useState(new Date())
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth())
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear())
@@ -158,7 +160,9 @@ export default function Calendar() {
     fetchData()
   }
 
-  async function deleteSession(id: string) {
+  async function deleteSession(id: string, title: string) {
+    const ok = await confirm({ title: `Delete "${title}"?`, message: "This study session and its reminder will be removed.", confirmLabel: "Delete session" })
+    if (!ok) return
     await supabase.from("study_sessions").delete().eq("id", id)
     fetchData()
   }
@@ -496,7 +500,7 @@ export default function Calendar() {
                         </p>
                       </div>
                       <button
-                        onClick={() => deleteSession(s.id)}
+                        onClick={() => deleteSession(s.id, s.title)}
                         aria-label={`Delete ${s.title}`}
                         className="shrink-0 rounded-lg p-1.5 text-ink-muted transition-colors hover:bg-danger-tint hover:text-danger"
                       >

@@ -1,4 +1,5 @@
 "use client"
+import { useConfirm } from "../ui/ConfirmProvider"
 import CountUp from "../ui/CountUp"
 import OfflineBanner from "../ui/OfflineBanner"
 import { trackScreen } from "../../lib/analytics"
@@ -68,6 +69,7 @@ export default function Dashboard({ email, logout }: Props) {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null)
   const [activeNav, setActiveNav] = useState("Dashboard")
+  const confirm = useConfirm()
   // The course a student came from when they opened Focus from its timer, so they can go straight back.
   const [focusFromCourse, setFocusFromCourse] = useState<string | null>(null)
   // Starts from the choice saved on this device, so a refresh keeps your theme.
@@ -144,7 +146,13 @@ export default function Dashboard({ email, logout }: Props) {
     loadInitialData()
   }, [])
 
-  async function deleteCourse(id: string) {
+  async function deleteCourse(id: string, title: string) {
+    const ok = await confirm({
+      title: `Delete "${title}"?`,
+      message: "This removes the course, its uploaded document and its saved pictures. You can't undo this.",
+      confirmLabel: "Delete course",
+    })
+    if (!ok) return
     const { error } = await supabase.from("courses").delete().eq("id", id)
     if (error) {
       console.error(error)
@@ -165,7 +173,9 @@ export default function Dashboard({ email, logout }: Props) {
     fetchAssignments()
   }
 
-  async function deleteAssignment(id: string) {
+  async function deleteAssignment(id: string, title: string) {
+    const ok = await confirm({ title: `Delete "${title}"?`, message: "This task will be removed for good.", confirmLabel: "Delete task" })
+    if (!ok) return
     const { error } = await supabase.from("assignments").delete().eq("id", id)
     if (error) {
       console.error(error)
@@ -389,7 +399,7 @@ export default function Dashboard({ email, logout }: Props) {
                         <p className="mt-0.5 text-sm text-ink-muted">{course.code}</p>
                       </div>
                       <button
-                        onClick={(e) => { e.stopPropagation(); deleteCourse(course.id) }}
+                        onClick={(e) => { e.stopPropagation(); deleteCourse(course.id, course.title) }}
                         aria-label={`Delete ${course.title}`}
                         className="rounded-lg p-2 text-ink-muted transition-colors hover:bg-danger-tint hover:text-danger"
                       >
@@ -447,7 +457,7 @@ export default function Dashboard({ email, logout }: Props) {
                         {assignment.completed ? "Undo" : "Done"}
                       </button>
                       <button
-                        onClick={() => deleteAssignment(assignment.id)}
+                        onClick={() => deleteAssignment(assignment.id, assignment.title)}
                         aria-label={`Delete ${assignment.title}`}
                         className="rounded-lg p-2 text-ink-muted transition-colors hover:bg-danger-tint hover:text-danger"
                       >

@@ -7,6 +7,7 @@ import { getCurrentUser } from "../../lib/auth"
 import { NotesSkeleton } from "../ui/Skeleton"
 import PageHeader from "../ui/PageHeader"
 import { formatDate } from "../../lib/dates"
+import { useConfirm } from "../ui/ConfirmProvider"
 import ErrorState from "../ui/ErrorState"
 import { useOnline } from "../../lib/online"
 import {
@@ -25,6 +26,7 @@ export default function Notes() {
   const [saving, setSaving] = useState(false)
   const [selectedNote, setSelectedNote] = useState<Note | null>(null)
   const online = useOnline()
+  const confirm = useConfirm()
 
   const refreshFromCache = useCallback((uid: string) => {
     setNotes(visibleNotes(uid))
@@ -82,6 +84,9 @@ export default function Notes() {
   }
 
   async function deleteNote(id: string) {
+    const target = notes.find((n) => n.id === id)
+    const ok = await confirm({ title: `Delete "${target?.title ?? "this note"}"?`, message: "This note will be removed for good.", confirmLabel: "Delete note" })
+    if (!ok) return
     if (selectedNote?.id === id) setSelectedNote(null)
     if (id.startsWith("local-") || !navigator.onLine) {
       queueDelete(userId, id)
