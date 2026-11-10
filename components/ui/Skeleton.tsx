@@ -1,3 +1,4 @@
+import SplashScreen from "./SplashScreen"
 import AnimatedBackground from "./AnimatedBackground"
 
 // Skeleton placeholders shown while data loads. They use the theme tokens, so
@@ -110,7 +111,7 @@ export function DashboardSkeleton() {
 
 /** The full app shell for the very first load, before we know who is signed in. */
 export function AppSkeleton() {
-  return <DashboardLoading dark={false} />
+  return <SplashScreen />
 }
 
 /** Dashboard home while its data loads (sidebar already on screen). */
