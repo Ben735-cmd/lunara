@@ -5,6 +5,7 @@ import { useRef, useState } from "react"
 import { FileText } from "lucide-react"
 import { supabase } from "../../lib/supabase"
 import { newId } from "../../lib/uuid"
+import { postWithProgress } from "../../lib/uploadWithProgress"
 
 type Props = {
   userId: string
@@ -26,6 +27,9 @@ export default function AddCourseModal({ userId, refreshCourses }: Props) {
   const [file, setFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState("")
+  // Where the upload is: 0 to 1 while bytes are sent, then reading the document, then saving the course.
+  const [stage, setStage] = useState<"sending" | "reading" | "saving">("sending")
+  const [sent, setSent] = useState(0)
 
   const abortRef = useRef<AbortController | null>(null)
 
@@ -39,6 +43,8 @@ export default function AddCourseModal({ userId, refreshCourses }: Props) {
     setFile(null)
     setError("")
     setUploading(false)
+    setStage("sending")
+    setSent(0)
     setOpen(false)
   }
 
@@ -54,6 +60,8 @@ export default function AddCourseModal({ userId, refreshCourses }: Props) {
 
     setUploading(true)
     setError("")
+    setStage("sending")
+    setSent(0)
 
     const controller = new AbortController()
     abortRef.current = controller
@@ -68,26 +76,22 @@ export default function AddCourseModal({ userId, refreshCourses }: Props) {
         formData.append("courseId", courseId)
         const { data: sessionData } = await supabase.auth.getSession()
         const token = sessionData.session?.access_token
-        const timer = setTimeout(() => controller.abort(), 45000)
-        try {
-          const res = await fetch("/api/extract", {
-            method: "POST",
-            body: formData,
-            headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-            signal: controller.signal,
-          })
-          const data = await res.json().catch(() => null)
-          if (!res.ok || !data) {
-            setError(data?.error || "Could not read that file. Try a smaller PDF or Word file.")
-            setUploading(false)
-            return
-          }
-          courseContent = data.text || ""
-        } finally {
-          clearTimeout(timer)
+        const res = await postWithProgress("/api/extract", formData, {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+          signal: controller.signal,
+          onProgress: setSent,
+          onSent: () => setStage("reading"),
+        })
+        const data = res.data as { text?: string; error?: string } | null
+        if (!res.ok || !data) {
+          setError(data?.error || "Could not read that file. Try a smaller PDF or Word file.")
+          setUploading(false)
+          return
         }
+        courseContent = data.text || ""
       }
 
+      setStage("saving")
       const { error: insertError } = await supabase.from("courses").insert([
         { id: courseId, title, code, progress: 0, user_id: userId, content: courseContent },
       ])
@@ -102,7 +106,7 @@ export default function AddCourseModal({ userId, refreshCourses }: Props) {
       refreshCourses()
     } catch {
       if (abortRef.current !== controller) return // cancelled by the user
-      setError("This is taking too long. Check your connection and try again.")
+      setError("The upload stalled. Check your connection and try again.")
       setUploading(false)
     }
   }
@@ -121,7 +125,7 @@ export default function AddCourseModal({ userId, refreshCourses }: Props) {
 
       {open && (
         <div className="anim-fade fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="new-course-title" className="anim-pop w-full max-w-md rounded-2xl border border-line bg-surface p-6">
+          <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="new-course-title" className="anim-pop max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-2xl border border-line bg-surface p-6">
             <h2 id="new-course-title" className="text-xl font-semibold text-ink">New course</h2>
 
             <div className="mt-6 space-y-4">
@@ -184,6 +188,34 @@ export default function AddCourseModal({ userId, refreshCourses }: Props) {
                 }}
               />
 
+              {uploading && file && (
+                <div className="rounded-lg border border-line bg-paper px-4 py-3" aria-live="polite">
+                  <div className="flex items-center justify-between gap-3 text-sm">
+                    <span className="font-medium text-ink">
+                      {stage === "sending" ? "Uploading…" : stage === "reading" ? "Reading your document…" : "Saving your course…"}
+                    </span>
+                    {stage === "sending" && <span className="tabular-nums text-ink-muted">{Math.round(sent * 100)}%</span>}
+                  </div>
+                  <div
+                    role="progressbar"
+                    aria-label="Upload progress"
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={stage === "sending" ? Math.round(sent * 100) : undefined}
+                    className="mt-2.5 h-2 overflow-hidden rounded-full bg-line"
+                  >
+                    {stage === "sending" ? (
+                      <div className="h-full rounded-full bg-accent transition-[width] duration-200 ease-out" style={{ width: `${Math.max(3, sent * 100)}%` }} />
+                    ) : (
+                      <div className="upload-indeterminate h-full w-1/3 rounded-full bg-accent" />
+                    )}
+                  </div>
+                  <p className="mt-2 text-xs text-ink-muted">
+                    {stage === "sending" ? `${formatSize(Math.round(file.size * sent))} of ${formatSize(file.size)}` : "Almost there. This can take a few seconds for long documents."}
+                  </p>
+                </div>
+              )}
+
               {error && (
                 <p role="alert" className="rounded-lg bg-danger-tint px-3.5 py-2.5 text-sm text-danger">{error}</p>
               )}
@@ -202,7 +234,7 @@ export default function AddCourseModal({ userId, refreshCourses }: Props) {
                 disabled={uploading}
                 className="flex-1 rounded-lg bg-accent py-2.5 text-sm font-medium text-on-accent transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {uploading ? "Creating..." : "Create course"}
+                {uploading ? (stage === "sending" && file ? `Uploading ${Math.round(sent * 100)}%` : "Creating...") : "Create course"}
               </button>
             </div>
           </div>

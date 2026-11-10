@@ -242,3 +242,10 @@ main > section:focus { outline: none; }
 .splash-bar-fill { animation: splash-sweep 1.3s ease-in-out infinite; }
 .splash-hint { animation: fade-in 0.6s ease-out 1.2s both; }
 .splash-bar { animation: fade-in 0.6s ease-out 1s both; }
+
+/* Upload progress bar while the server reads the document (components/dashboard/AddCourseModal.tsx) */
+@keyframes upload-indeterminate {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(300%); }
+}
+.upload-indeterminate { animation: upload-indeterminate 1.2s ease-in-out infinite; }
