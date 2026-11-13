@@ -215,9 +215,10 @@ export default function Dashboard({ email, logout }: Props) {
     { label: "Study streak", value: studyStreak, Icon: Flame },
   ]
 
+  const todayIso = new Date().toLocaleDateString("en-CA")
   const panel = "rounded-xl border border-line bg-surface"
   const smallButton =
-    "rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:bg-paper"
+    "rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors"
 
   return (
     <FocusProvider>
@@ -361,12 +362,12 @@ export default function Dashboard({ email, logout }: Props) {
           {/* Stats */}
           <div className="stagger mt-8 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-line bg-line lg:grid-cols-4">
             {stats.map(({ label, value, Icon }) => (
-              <div key={label} className="bg-surface p-5">
+              <div key={label} className="bg-surface p-4 sm:p-5">
                 <div className="flex items-center justify-between text-ink-muted">
                   <p className="text-sm">{label}</p>
                   <Icon size={18} aria-hidden="true" />
                 </div>
-                <p className="mt-3 text-3xl font-semibold tabular-nums text-ink"><CountUp value={value} /></p>
+                <p className="mt-2 text-2xl font-semibold tabular-nums text-ink"><CountUp value={value} /></p>
               </div>
             ))}
           </div>
@@ -447,12 +448,14 @@ export default function Dashboard({ email, logout }: Props) {
                       <p className={`truncate text-sm font-medium ${assignment.completed ? "text-ink-muted line-through" : "text-ink"}`}>
                         {assignment.title}
                       </p>
-                      <p className="mt-0.5 text-xs text-ink-muted">Due {formatDate(assignment.due_date)}</p>
+                      <p className={`mt-0.5 text-xs ${!assignment.completed && assignment.due_date < todayIso ? "font-medium text-danger" : "text-ink-muted"}`}>
+                        {!assignment.completed && assignment.due_date < todayIso ? "Overdue · " : "Due "}{formatDate(assignment.due_date)}
+                      </p>
                     </div>
                     <div className="flex shrink-0 items-center gap-1.5">
                       <button
                         onClick={(e) => { if (!assignment.completed) celebrate({ x: e.clientX, y: e.clientY }); toggleAssignment(assignment.id, assignment.completed) }}
-                        className={smallButton}
+                        className={`${smallButton} ${assignment.completed ? "text-ink-muted hover:bg-paper" : "text-accent-strong hover:bg-accent-tint"}`}
                       >
                         {assignment.completed ? "Undo" : "Done"}
                       </button>

@@ -703,7 +703,7 @@ export default function CourseViewer({ courseId, onBack, onOpenFocus }: Props) {
             <h2 className="text-lg font-semibold text-ink">Study progress</h2>
             <p className="mb-5 mt-0.5 text-sm text-ink-muted">Updates automatically from your flashcards and quizzes</p>
 
-            <p className="mb-4 text-center text-5xl font-semibold tabular-nums text-ink">{progress}%</p>
+            <p className="mb-3 text-center text-3xl font-semibold tabular-nums text-ink">{progress}%</p>
 
             <div
               role="progressbar"

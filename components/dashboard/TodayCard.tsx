@@ -91,10 +91,10 @@ export default function TodayCard({
   const started = timer.running || remaining < total
 
   return (
-    <section aria-labelledby="today-title" className="mt-6 rounded-xl border border-line bg-surface p-6">
+    <section aria-labelledby="today-title" className="mt-6 rounded-xl border border-accent/30 bg-accent-tint/50 p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 id="today-title" className="text-lg font-semibold text-ink">Today</h2>
+          <h2 id="today-title" className="text-xl font-semibold text-ink">Today</h2>
           <p className="mt-0.5 text-sm text-ink-muted">{formatDateLong(now)}</p>
         </div>
         {started ? (
@@ -136,7 +136,7 @@ export default function TodayCard({
       <div className="mt-5 grid gap-6 md:grid-cols-2">
         {/* Schedule */}
         <div>
-          <h3 className="mb-2 text-sm font-medium text-ink">Schedule</h3>
+          <h3 className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-ink-muted">Schedule</h3>
           {!loaded ? (
             <div role="status" aria-busy="true" aria-label="Loading schedule" className="h-20 animate-pulse rounded-lg bg-paper" />
           ) : schedule.length === 0 ? (
@@ -185,7 +185,7 @@ export default function TodayCard({
 
         {/* Due soon */}
         <div>
-          <h3 className="mb-2 text-sm font-medium text-ink">Due today and tomorrow</h3>
+          <h3 className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-ink-muted">Due today and tomorrow</h3>
           {due.length === 0 ? (
             <div className="rounded-lg bg-paper px-4 py-5 text-sm text-ink-muted">Nothing due. Nice and clear.</div>
           ) : (
@@ -203,8 +203,12 @@ export default function TodayCard({
                     />
                     <div className="min-w-0 flex-1">
                       <p className="break-words text-sm font-medium text-ink">{a.title}</p>
-                      <p className={`mt-0.5 text-xs ${overdue ? "text-danger" : "text-ink-muted"}`}>
-                        {overdue ? "Overdue" : a.due_date === today ? "Due today" : "Due tomorrow"}
+                      <p className="mt-1 text-xs">
+                        {overdue ? (
+                          <span className="rounded-full bg-danger-tint px-2 py-0.5 font-semibold text-danger">Overdue</span>
+                        ) : (
+                          <span className="font-medium text-ink-muted">{a.due_date === today ? "Due today" : "Due tomorrow"}</span>
+                        )}
                       </p>
                     </div>
                   </li>
