@@ -89,14 +89,16 @@ export async function POST(req: NextRequest) {
 
   const bytes = await file.arrayBuffer()
   const buffer = Buffer.from(bytes)
+  // Phones often save files as ".PDF" or ".Pdf", so compare in lower case.
+  const fileName = (file.name || "").toLowerCase()
 
   try {
-    if (file.name.endsWith(".docx")) {
+    if (fileName.endsWith(".docx")) {
       const result = await mammoth.extractRawText({ buffer })
       return NextResponse.json({ text: formatExtractedText(result.value) })
     }
 
-    if (file.name.endsWith(".pdf")) {
+    if (fileName.endsWith(".pdf")) {
       const pdf = await getDocumentProxy(new Uint8Array(buffer))
       // Keep page (slide) boundaries: a form feed between pages lets the course
       // viewer turn each slide into its own heading and list.

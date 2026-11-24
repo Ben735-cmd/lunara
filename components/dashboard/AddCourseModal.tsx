@@ -104,9 +104,15 @@ export default function AddCourseModal({ userId, refreshCourses }: Props) {
       abortRef.current = null
       closeForm()
       refreshCourses()
-    } catch {
+    } catch (err) {
       if (abortRef.current !== controller) return // cancelled by the user
-      setError("The upload stalled. Check your connection and try again.")
+      const reason = err instanceof Error ? err.message : ""
+      setError(
+        reason === "stalled" ? "The upload stalled. Check your connection and try again."
+        : reason === "no-reply" ? "Your file uploaded, but reading it is taking too long. Try a smaller file."
+        : reason === "network" ? "Couldn't reach Lunara. Check your connection and try again."
+        : "Something went wrong while adding the course. Please try again."
+      )
       setUploading(false)
     }
   }
@@ -175,16 +181,33 @@ export default function AddCourseModal({ userId, refreshCourses }: Props) {
                 type="file"
                 accept=".pdf,.docx"
                 className="hidden"
-                onChange={(e) => {
-                  const picked = e.target.files?.[0] || null
-                  e.target.value = ""
-                  if (picked && picked.size > MAX_FILE_BYTES) {
+                onChange={async (e) => {
+                  const input = e.target
+                  const picked = input.files?.[0] || null
+                  if (!picked) return
+                  if (!/\.(pdf|docx)$/i.test(picked.name)) {
+                    input.value = ""
+                    setFile(null)
+                    setError(`"${picked.name}" isn't a PDF or Word (.docx) file.`)
+                    return
+                  }
+                  if (picked.size > MAX_FILE_BYTES) {
+                    input.value = ""
                     setFile(null)
                     setError(`"${picked.name}" is ${formatSize(picked.size)}. Files must be under ${MAX_FILE_MB} MB. Compress it or upload fewer pages.`)
                     return
                   }
-                  setError("")
-                  setFile(picked)
+                  // Copy the file into memory right away. Many phones invalidate the original once the
+                  // picker closes (files from Downloads, Drive or WhatsApp), which breaks the upload later.
+                  try {
+                    const bytes = await picked.arrayBuffer()
+                    setFile(new File([bytes], picked.name, { type: picked.type }))
+                    setError("")
+                  } catch {
+                    setFile(null)
+                    setError("Couldn't read that file from your phone. Save it to your phone first (not Drive or a link), then pick it again.")
+                  }
+                  input.value = ""
                 }}
               />
 
