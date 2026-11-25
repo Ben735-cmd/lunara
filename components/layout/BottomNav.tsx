@@ -9,6 +9,7 @@ import {
   CalendarDays,
   LayoutDashboard,
   Library,
+  Sparkles,
   ListChecks,
   LogOut,
   NotebookText,
@@ -39,6 +40,7 @@ const MORE_ITEMS: { label: string; Icon: LucideIcon }[] = [
   { label: "Timetable", Icon: CalendarClock },
   { label: "Past papers", Icon: Library },
   { label: "Solver", Icon: Calculator },
+  { label: "Assistant", Icon: Sparkles },
 ]
 
 type Sheet = "courses" | "more" | null

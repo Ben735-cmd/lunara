@@ -4,7 +4,7 @@ import CountUp from "../ui/CountUp"
 import OfflineBanner from "../ui/OfflineBanner"
 import { trackScreen } from "../../lib/analytics"
 import { celebrate } from "../../lib/celebrate"
-import AITest from "../ai/AITest"
+import AssistantScreen from "../ai/AssistantScreen"
 import { useEffect, useState } from "react"
 import dynamic from "next/dynamic"
 import { BookOpen, ClipboardList, Flame, Search, Trash2, TrendingUp, X } from "lucide-react"
@@ -317,6 +317,8 @@ export default function Dashboard({ email, logout }: Props) {
         <PastPapers />
       ) : activeNav === "Solver" ? (
         <QuestionSolver />
+      ) : activeNav === "Assistant" ? (
+        <AssistantScreen />
       ) : (
         <section className="w-full flex-1 overflow-y-auto mx-auto max-w-6xl px-5 pb-32 pt-8 md:px-12 md:pb-36 md:pt-11">
 
@@ -485,10 +487,6 @@ export default function Dashboard({ email, logout }: Props) {
             onToggleAssignment={toggleAssignment}
             onOpenTimetable={() => { setSelectedCourseId(null); setActiveNav("Timetable") }}
           />
-
-          <div className="mt-6">
-            <AITest />
-          </div>
 
         </section>
       )}
