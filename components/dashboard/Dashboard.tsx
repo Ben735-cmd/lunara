@@ -12,7 +12,8 @@ import { supabase } from "../../lib/supabase"
 import { getCurrentUser } from "../../lib/auth"
 import { calculateProgress, type QuizAttempt } from "../../lib/progress"
 import { applyThemeClass, initialTheme, storeTheme } from "../../lib/preferences"
-import Sidebar from "../layout/Sidebar"
+import BottomNav from "../layout/BottomNav"
+import Logo from "../ui/Logo"
 import FocusProvider from "../focus/FocusProvider"
 import TodayCard from "./TodayCard"
 import AddCourseModal from "./AddCourseModal"
@@ -245,7 +246,7 @@ export default function Dashboard({ email, logout }: Props) {
       {toast && (
         <div
           role="status"
-          className={`toast fixed bottom-6 right-6 z-[100] flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-on-accent ${
+          className={`toast fixed bottom-28 right-4 md:right-6 z-[100] flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-on-accent ${
             toast.type === "error" ? "bg-danger" : "bg-accent"
           }`}
         >
@@ -260,7 +261,7 @@ export default function Dashboard({ email, logout }: Props) {
         </div>
       )}
 
-      <Sidebar
+      <BottomNav
         logout={logout}
         onSelectCourse={(id) => {
           setSelectedCourseId(id || null)
@@ -317,8 +318,9 @@ export default function Dashboard({ email, logout }: Props) {
       ) : activeNav === "Solver" ? (
         <QuestionSolver />
       ) : (
-        // pt-[88px] on mobile clears the fixed menu button from the Sidebar
-        <section className="w-full flex-1 overflow-y-auto px-5 pb-8 pt-[88px] md:px-12 md:py-11">
+        <section className="w-full flex-1 overflow-y-auto mx-auto max-w-6xl px-5 pb-32 pt-8 md:px-12 md:pb-36 md:pt-11">
+
+          <Logo size={30} className="mb-5" />
 
           {/* Header */}
           <div className="flex flex-wrap items-center justify-between gap-4">

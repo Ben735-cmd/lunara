@@ -9,7 +9,7 @@ export function Skeleton({ className = "" }: { className?: string }) {
   return <div aria-hidden="true" className={`animate-pulse rounded-md bg-line ${className}`} />
 }
 
-const shell = "w-full flex-1 overflow-hidden px-5 pb-8 pt-[88px] md:px-12 md:py-11"
+const shell = "w-full flex-1 overflow-hidden mx-auto max-w-6xl px-5 pb-32 pt-8 md:px-12 md:pb-36 md:pt-11"
 const panel = "rounded-xl border border-line bg-surface"
 
 function Region({ label, className, children }: { label: string; className?: string; children: React.ReactNode }) {

@@ -169,7 +169,7 @@ export default function Timetable() {
   }
 
   return (
-    <section className="w-full flex-1 overflow-y-auto px-5 pb-8 pt-[88px] md:px-12 md:py-11">
+    <section className="w-full flex-1 overflow-y-auto mx-auto max-w-6xl px-5 pb-32 pt-8 md:px-12 md:pb-36 md:pt-11">
       <PageHeader
         title="Timetable"
         subtitle="Add your weekly classes once. Lunara reminds you before each one starts, every week."

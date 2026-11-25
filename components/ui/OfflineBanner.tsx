@@ -27,7 +27,7 @@ export default function OfflineBanner() {
     <div
       role="status"
       aria-live="polite"
-      className={`anim-pop fixed bottom-5 left-1/2 z-[90] flex w-max max-w-[calc(100vw-2rem)] -translate-x-1/2 items-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium shadow-lg ${
+      className={`anim-pop fixed bottom-24 left-1/2 z-[90] flex w-max max-w-[calc(100vw-2rem)] -translate-x-1/2 items-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium shadow-lg ${
         online ? "bg-accent text-on-accent" : "bg-ink text-paper"
       }`}
     >

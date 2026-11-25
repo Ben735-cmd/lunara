@@ -18,7 +18,7 @@ export default function FocusPill({ courseTitle, onOpenFocus }: { courseTitle: s
     return (
       <button
         onClick={() => start(courseTitle)}
-        className="anim-pop fixed bottom-5 right-4 z-40 inline-flex items-center gap-2 rounded-full border border-line bg-surface px-4 py-3 text-sm font-medium text-ink shadow-lg transition-colors hover:bg-paper md:right-8"
+        className="anim-pop fixed bottom-24 right-4 z-40 inline-flex items-center gap-2 rounded-full border border-line bg-surface px-4 py-3 text-sm font-medium text-ink shadow-lg transition-colors hover:bg-paper md:right-8"
       >
         <Timer size={16} aria-hidden="true" className="text-accent" />
         {onBreak ? `Start ${MODE_LABEL[timer.mode].toLowerCase()}` : `Focus ${settings.focus} min`}
@@ -28,7 +28,7 @@ export default function FocusPill({ courseTitle, onOpenFocus }: { courseTitle: s
 
   return (
     <div
-      className="anim-pop fixed bottom-5 right-4 z-40 overflow-hidden rounded-full border border-line bg-surface shadow-lg md:right-8"
+      className="anim-pop fixed bottom-24 right-4 z-40 overflow-hidden rounded-full border border-line bg-surface shadow-lg md:right-8"
       role="group"
       aria-label="Focus timer"
     >
