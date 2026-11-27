@@ -1,5 +1,6 @@
 "use client"
 
+import { createPortal } from "react-dom"
 import { useDialog } from "../../lib/useDialog"
 import { useState } from "react"
 import { supabase } from "../../lib/supabase"
@@ -64,8 +65,8 @@ export default function AddAssignmentModal({
         Add task
       </button>
 
-      {open && (
-        <div className="anim-fade fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+      {open && createPortal(
+        <div className="anim-fade fixed inset-0 z-[60] flex items-center justify-center bg-black/40 px-4">
           <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="new-assignment-title" className="anim-pop w-full max-w-md rounded-2xl border border-line bg-surface p-6">
             <h2 id="new-assignment-title" className="text-xl font-semibold text-ink">New assignment</h2>
 
@@ -114,7 +115,7 @@ export default function AddAssignmentModal({
             </div>
           </div>
         </div>
-      )}
+      , document.body)}
     </>
   )
 }

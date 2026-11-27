@@ -1,5 +1,6 @@
 "use client"
 
+import { createPortal } from "react-dom"
 import { useDialog } from "../../lib/useDialog"
 import { useRef, useState } from "react"
 import { FileText } from "lucide-react"
@@ -129,8 +130,8 @@ export default function AddCourseModal({ userId, refreshCourses }: Props) {
         Add course
       </button>
 
-      {open && (
-        <div className="anim-fade fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+      {open && createPortal(
+        <div className="anim-fade fixed inset-0 z-[60] flex items-center justify-center bg-black/40 px-4">
           <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="new-course-title" className="anim-pop max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-2xl border border-line bg-surface p-6">
             <h2 id="new-course-title" className="text-xl font-semibold text-ink">New course</h2>
 
@@ -262,7 +263,7 @@ export default function AddCourseModal({ userId, refreshCourses }: Props) {
             </div>
           </div>
         </div>
-      )}
+      , document.body)}
     </>
   )
 }
