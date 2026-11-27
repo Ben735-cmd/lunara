@@ -320,46 +320,46 @@ export default function Dashboard({ email, logout }: Props) {
       ) : activeNav === "Assistant" ? (
         <AssistantScreen />
       ) : (
-        <section className="w-full flex-1 overflow-y-auto mx-auto max-w-6xl px-5 pb-32 pt-8 md:px-12 md:pb-36 md:pt-11">
+        <section className="w-full flex-1 overflow-y-auto mx-auto max-w-6xl px-5 pb-32 pt-3 md:px-12 md:pb-36 md:pt-5">
 
-          <Logo size={30} className="mb-5" />
+          {/* Top bar: brand on the left, account on the right. z-40 keeps the profile menu above the page. */}
+          <header className="relative z-40 flex h-14 items-center justify-between gap-4 border-b border-line">
+            <Logo size={32} />
+            <ProfileCenter
+              email={email}
+              isDark={isDark}
+              onThemeChange={changeTheme}
+              onStreakUpdate={(streak) => setStudyStreak(streak)}
+            />
+          </header>
 
-          {/* Header */}
-          <div className="flex flex-wrap items-center justify-between gap-4">
+          {/* Page title and search: stacked on phones, side by side on wider screens */}
+          <div className="mt-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <h1 className="text-3xl font-semibold tracking-tight text-ink">Dashboard</h1>
 
-            <div className="flex w-full items-center gap-3 md:w-auto">
-              <div className="relative flex-1 md:flex-none">
-                <Search
-                  size={18}
-                  aria-hidden="true"
-                  className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-muted"
-                />
-                <input
-                  type="text"
-                  aria-label="Search courses and tasks"
-                  placeholder="Search courses and tasks"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full rounded-lg border border-line bg-surface py-2.5 pl-10 pr-10 text-sm text-ink placeholder:text-ink-muted focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 md:w-[280px]"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery("")}
-                    aria-label="Clear search"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink"
-                  >
-                    <X size={16} />
-                  </button>
-                )}
-              </div>
-
-              <ProfileCenter
-                email={email}
-                isDark={isDark}
-                onThemeChange={changeTheme}
-                onStreakUpdate={(streak) => setStudyStreak(streak)}
+            <div className="relative w-full md:w-[320px]">
+              <Search
+                size={18}
+                aria-hidden="true"
+                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-muted"
               />
+              <input
+                type="text"
+                aria-label="Search courses and tasks"
+                placeholder="Search courses and tasks"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full rounded-lg border border-line bg-surface py-3 pl-10 pr-10 text-sm text-ink placeholder:text-ink-muted focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  aria-label="Clear search"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink"
+                >
+                  <X size={16} />
+                </button>
+              )}
             </div>
           </div>
 

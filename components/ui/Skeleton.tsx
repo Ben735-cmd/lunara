@@ -67,7 +67,17 @@ function ListRows({ rows }: { rows: number }) {
 export function DashboardSkeleton() {
   return (
     <>
-      <PageHeader action={false} />
+      <div className="flex h-14 items-center justify-between border-b border-line">
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-8 w-8 rounded-[22%]" />
+          <Skeleton className="h-5 w-20" />
+        </div>
+        <Skeleton className="h-9 w-9 rounded-full" />
+      </div>
+      <div className="mt-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <Skeleton className="h-9 w-44" />
+        <Skeleton className="h-11 w-full rounded-lg md:w-[320px]" />
+      </div>
       <StatRow count={4} />
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_340px]">
         <div className={`${panel} p-6`}>
@@ -133,7 +143,7 @@ export function DashboardLoading({ dark }: { dark: boolean }) {
         </div>
         <Skeleton className="h-10 w-full rounded-lg" />
       </aside>
-      <section className={shell}>
+      <section className={shell.replace("pt-8", "pt-3").replace("md:pt-11", "md:pt-5")}>
         <DashboardSkeleton />
       </section>
     </main>

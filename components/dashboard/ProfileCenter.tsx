@@ -284,14 +284,15 @@ export default function ProfileCenter({ email, onThemeChange, isDark, onStreakUp
         onClick={() => setOpen(!open)}
         aria-haspopup="dialog"
         aria-expanded={open}
-        className="flex items-center gap-2.5 rounded-lg border border-line bg-surface py-1.5 pl-1.5 pr-3 transition-colors hover:bg-paper"
+        aria-label="Profile and settings"
+        className="flex items-center gap-2.5 rounded-full p-1 transition-colors hover:bg-surface md:pr-3"
       >
-        <Avatar url={avatarUrl} initials={initials} size="h-8 w-8" />
-        <span className="hidden text-left sm:block">
+        <Avatar url={avatarUrl} initials={initials} size="h-9 w-9" />
+        <span className="hidden text-left md:block">
           <span className="block text-sm font-medium leading-tight text-ink">{fullName || "Your name"}</span>
           <span className="block text-xs leading-tight text-ink-muted">{university || "Set your university"}</span>
         </span>
-        <ChevronDown size={16} aria-hidden="true" className="text-ink-muted" />
+        <ChevronDown size={16} aria-hidden="true" className="hidden text-ink-muted md:block" />
       </button>
 
       {open && (
