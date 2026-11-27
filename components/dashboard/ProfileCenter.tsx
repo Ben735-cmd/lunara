@@ -1,12 +1,15 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
-import { Bell, Check, ChevronDown, Lock, Mail, Moon, Settings, Sun, User } from "lucide-react"
+import { useEffect, useState, type ReactNode } from "react"
+import { createPortal } from "react-dom"
+import { Camera, Check, ChevronDown, ChevronRight, LogOut, X } from "lucide-react"
 import { supabase } from "../../lib/supabase"
 import { getCurrentUser } from "../../lib/auth"
 import { uploadAvatar as uploadAvatarFile } from "../../lib/avatar"
 import Onboarding from "./Onboarding"
-import { getStoredNotifications, getStoredTheme, storeNotifications } from "../../lib/preferences"
+import { getStoredTheme } from "../../lib/preferences"
+import { useDialog } from "../../lib/useDialog"
+import ReminderCard from "../ui/ReminderCard"
 
 type Profile = {
   id?: string
@@ -25,13 +28,12 @@ type Props = {
   onThemeChange: (dark: boolean) => void
   isDark: boolean
   onStreakUpdate: (streak: number) => void
+  logout: () => void
 }
-
-type Tab = "profile" | "settings" | "notifications"
 
 function Avatar({ url, initials, size }: { url: string; initials: string; size: string }) {
   return (
-    <span className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-accent text-sm font-semibold text-on-accent ${size}`}>
+    <span className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-accent font-semibold text-on-accent ${size}`}>
       {url ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={url} alt="" className="h-full w-full object-cover" />
@@ -42,16 +44,15 @@ function Avatar({ url, initials, size }: { url: string; initials: string; size: 
   )
 }
 
-function Switch({ checked, onChange, label, disabled }: { checked: boolean; onChange?: () => void; label: string; disabled?: boolean }) {
+function Switch({ checked, onChange, label }: { checked: boolean; onChange: () => void; label: string }) {
   return (
     <button
       type="button"
       role="switch"
       aria-checked={checked}
       aria-label={label}
-      disabled={disabled}
       onClick={onChange}
-      className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:cursor-default ${checked ? "bg-accent" : "bg-line"}`}
+      className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${checked ? "bg-accent" : "bg-line"}`}
     >
       <span
         aria-hidden="true"
@@ -61,24 +62,69 @@ function Switch({ checked, onChange, label, disabled }: { checked: boolean; onCh
   )
 }
 
-export default function ProfileCenter({ email, onThemeChange, isDark, onStreakUpdate }: Props) {
+function Section({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section>
+      <h3 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wider text-ink-muted">{title}</h3>
+      {children}
+    </section>
+  )
+}
+
+/**
+ * The account screen: full screen on phones, a side panel on wider screens.
+ * It is rendered on the body so page animations can't trap or cover it.
+ */
+function AccountPanel({ onClose, children }: { onClose: () => void; children: ReactNode }) {
+  const ref = useDialog<HTMLDivElement>(true, onClose)
+
+  useEffect(() => {
+    document.body.style.overflow = "hidden"
+    return () => { document.body.style.overflow = "" }
+  }, [])
+
+  return createPortal(
+    <div className="anim-fade fixed inset-0 z-[60] flex justify-end bg-black/45" onClick={onClose}>
+      <div
+        ref={ref}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Account settings"
+        onClick={(e) => e.stopPropagation()}
+        className="flex h-full w-full flex-col bg-paper text-ink shadow-2xl sm:max-w-md sm:border-l sm:border-line"
+      >
+        <div className="flex h-14 shrink-0 items-center justify-between border-b border-line bg-surface pl-5 pr-3">
+          <h2 className="text-lg font-semibold">Account</h2>
+          <button onClick={onClose} aria-label="Close" className="rounded-lg p-2 text-ink-muted hover:bg-paper hover:text-ink">
+            <X size={20} aria-hidden="true" />
+          </button>
+        </div>
+        <div className="flex-1 space-y-6 overflow-y-auto px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-6">
+          {children}
+        </div>
+      </div>
+    </div>,
+    document.body
+  )
+}
+
+export default function ProfileCenter({ email, onThemeChange, isDark, onStreakUpdate, logout }: Props) {
   const [open, setOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState<Tab>("profile")
   const [profile, setProfile] = useState<Profile | null>(null)
   const [fullName, setFullName] = useState("")
   const [university, setUniversity] = useState("")
   const [avatarUrl, setAvatarUrl] = useState("")
-  const [notifications, setNotifications] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [saveError, setSaveError] = useState(false)
   const [newPassword, setNewPassword] = useState("")
   const [passwordSaving, setPasswordSaving] = useState(false)
   const [passwordSaved, setPasswordSaved] = useState(false)
+  const [passwordError, setPasswordError] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
   const [uploading, setUploading] = useState(false)
   // Details to ask a brand-new student for. Set once, when their profile has no name yet.
   const [welcome, setWelcome] = useState<{ userId: string; name: string; avatar: string } | null>(null)
-  const dropdownRef = useRef<HTMLDivElement>(null)
 
   async function updateStudyStreak(userId: string, currentStreak: number, lastActiveDate: string) {
     const today = new Date().toISOString().split("T")[0]
@@ -116,6 +162,7 @@ export default function ProfileCenter({ email, onThemeChange, isDark, onStreakUp
       setFullName(values.fullName)
       setUniversity(values.university)
       setAvatarUrl(values.avatarUrl)
+      setProfile((p) => p && { ...p, full_name: values.fullName, university: values.university, avatar_url: values.avatarUrl })
       setWelcome(null)
     }
     return ok
@@ -141,12 +188,6 @@ export default function ProfileCenter({ email, onThemeChange, isDark, onStreakUp
       const localTheme = getStoredTheme()
       if (localTheme === null) onThemeChange(!!data.dark_mode)
       else if (localTheme !== !!data.dark_mode) void persist({ dark_mode: localTheme })
-      const localNotifications = getStoredNotifications()
-      const notificationsOn = localNotifications ?? data.notifications ?? true
-      setNotifications(notificationsOn)
-      if (localNotifications !== null && localNotifications !== (data.notifications ?? true)) {
-        void persist({ notifications: localNotifications })
-      }
       updateStudyStreak(user.id, data.study_streak || 0, data.last_active_date || "")
       if (!data.full_name) askForDetails(user)
     } else {
@@ -169,13 +210,6 @@ export default function ProfileCenter({ email, onThemeChange, isDark, onStreakUp
 
   useEffect(() => {
     fetchProfile()
-    function handleClickOutside(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setOpen(false)
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
   // Writes only the fields given, so saving one setting never overwrites another.
@@ -201,14 +235,14 @@ export default function ProfileCenter({ email, onThemeChange, isDark, onStreakUp
   async function saveProfile() {
     setSaving(true)
     setSaveError(false)
-    const ok = await persist({ full_name: fullName, university, avatar_url: avatarUrl })
+    const ok = await persist({ full_name: fullName, university })
     setSaving(false)
     if (!ok) {
       setSaveError(true)
       return
     }
+    setProfile((p) => p && { ...p, full_name: fullName, university })
     setSaved(true)
-    fetchProfile()
     setTimeout(() => setSaved(false), 2000)
   }
 
@@ -218,19 +252,17 @@ export default function ProfileCenter({ email, onThemeChange, isDark, onStreakUp
     await persist({ dark_mode: newVal })
   }
 
-  async function toggleNotifications() {
-    const newVal = !notifications
-    setNotifications(newVal)
-    storeNotifications(newVal)
-    await persist({ notifications: newVal })
-  }
-
   async function changePassword() {
-    if (!newPassword || newPassword.length < 6) return
+    if (newPassword.length < 6) return
     setPasswordSaving(true)
-    await supabase.auth.updateUser({ password: newPassword })
-    setNewPassword("")
+    setPasswordError("")
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
     setPasswordSaving(false)
+    if (error) {
+      setPasswordError(error.message)
+      return
+    }
+    setNewPassword("")
     setPasswordSaved(true)
     setTimeout(() => setPasswordSaved(false), 2000)
   }
@@ -239,6 +271,7 @@ export default function ProfileCenter({ email, onThemeChange, isDark, onStreakUp
     const user = await getCurrentUser()
     if (!user) return
     setUploading(true)
+    setSaveError(false)
     try {
       const url = await uploadAvatarFile(user.id, file)
       setAvatarUrl(url)
@@ -250,27 +283,30 @@ export default function ProfileCenter({ email, onThemeChange, isDark, onStreakUp
     setUploading(false)
   }
 
+  async function removeAvatar() {
+    setSaveError(false)
+    if (await persist({ avatar_url: "" })) setAvatarUrl("")
+    else setSaveError(true)
+  }
+
+  const changed = fullName !== (profile?.full_name ?? "") || university !== (profile?.university ?? "")
+
   const initials = fullName
     ? fullName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
     : email[0].toUpperCase()
 
   // Every color below comes from the design tokens, so light and dark mode
-  // follow the "dark" class on the dashboard with no per-component palette.
+  // follow the "dark" class on the page with no per-component palette.
   const inputClass =
     "w-full rounded-lg border border-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-muted/70 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
   const labelClass = "mb-1.5 block text-sm font-medium text-ink"
-  const card = "rounded-lg border border-line bg-paper p-4"
+  const card = "rounded-xl border border-line bg-surface"
+  const row = "flex items-center justify-between gap-3 px-4 py-3.5"
   const primaryButton =
-    "w-full rounded-lg bg-accent py-2.5 text-sm font-medium text-on-accent transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60"
-
-  const tabs: { id: Tab; label: string; Icon: typeof User }[] = [
-    { id: "profile", label: "Profile", Icon: User },
-    { id: "settings", label: "Settings", Icon: Settings },
-    { id: "notifications", label: "Alerts", Icon: Bell },
-  ]
+    "w-full rounded-lg bg-accent py-2.5 text-sm font-medium text-on-accent transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-50"
 
   return (
-    <div ref={dropdownRef} className="relative">
+    <div className="relative">
       {welcome && (
         <Onboarding
           userId={welcome.userId}
@@ -281,13 +317,13 @@ export default function ProfileCenter({ email, onThemeChange, isDark, onStreakUp
         />
       )}
       <button
-        onClick={() => setOpen(!open)}
+        onClick={() => setOpen(true)}
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-label="Profile and settings"
         className="flex items-center gap-2.5 rounded-full p-1 transition-colors hover:bg-surface md:pr-3"
       >
-        <Avatar url={avatarUrl} initials={initials} size="h-9 w-9" />
+        <Avatar url={avatarUrl} initials={initials} size="h-9 w-9 text-sm" />
         <span className="hidden text-left md:block">
           <span className="block text-sm font-medium leading-tight text-ink">{fullName || "Your name"}</span>
           <span className="block text-xs leading-tight text-ink-muted">{university || "Set your university"}</span>
@@ -296,23 +332,22 @@ export default function ProfileCenter({ email, onThemeChange, isDark, onStreakUp
       </button>
 
       {open && (
-        <div
-          role="dialog"
-          aria-label="Profile and settings"
-          className="absolute right-0 top-[calc(100%+8px)] z-[1000] w-[min(360px,calc(100vw-2.5rem))] rounded-xl border border-line bg-surface p-5 shadow-lg"
-        >
+        <AccountPanel onClose={() => setOpen(false)}>
           {/* Identity */}
-          <div className="mb-5 flex items-center gap-3.5 border-b border-line pb-5">
+          <div className="flex flex-col items-center text-center">
             <button
               type="button"
               onClick={() => document.getElementById("avatar-upload")?.click()}
-              aria-label="Upload a profile picture"
-              className="relative shrink-0 rounded-full"
+              aria-label="Change profile photo"
+              className="relative rounded-full"
             >
-              <Avatar url={avatarUrl} initials={initials} size="h-14 w-14 text-lg" />
+              <Avatar url={avatarUrl} initials={initials} size="h-20 w-20 text-2xl" />
+              <span className="absolute -bottom-0.5 -right-0.5 flex h-7 w-7 items-center justify-center rounded-full border border-line bg-surface text-ink shadow-sm">
+                <Camera size={14} aria-hidden="true" />
+              </span>
               {uploading && (
                 <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50">
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
                 </span>
               )}
             </button>
@@ -323,128 +358,93 @@ export default function ProfileCenter({ email, onThemeChange, isDark, onStreakUp
               className="hidden"
               onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadAvatar(f) }}
             />
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-semibold text-ink">{fullName || "Your name"}</p>
-              <p className="truncate text-xs text-ink-muted">{email}</p>
-              <p className="truncate text-xs font-medium text-accent-strong">{university || "No university set"}</p>
-            </div>
-            <button
-              onClick={toggleDarkMode}
-              aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-              className="rounded-lg border border-line p-2 text-ink-muted transition-colors hover:bg-paper hover:text-ink"
-            >
-              {isDark ? <Sun size={18} /> : <Moon size={18} />}
-            </button>
-          </div>
-
-          {/* Tabs */}
-          <div role="tablist" className="mb-5 flex gap-1 rounded-lg border border-line bg-paper p-1">
-            {tabs.map(({ id, label, Icon }) => (
-              <button
-                key={id}
-                role="tab"
-                aria-selected={activeTab === id}
-                onClick={() => setActiveTab(id)}
-                className={`flex flex-1 items-center justify-center gap-1.5 rounded-md py-1.5 text-sm font-medium transition-colors ${
-                  activeTab === id ? "bg-accent-tint text-accent-strong" : "text-ink-muted hover:text-ink"
-                }`}
-              >
-                <Icon size={15} aria-hidden="true" /> {label}
+            <p className="mt-3 max-w-full truncate text-lg font-semibold text-ink">{profile?.full_name || "Your name"}</p>
+            <p className="max-w-full truncate text-sm text-ink-muted">{email}</p>
+            {avatarUrl && (
+              <button onClick={removeAvatar} className="mt-1 rounded-md px-2 py-1 text-xs font-medium text-ink-muted hover:text-danger">
+                Remove photo
               </button>
-            ))}
+            )}
           </div>
 
-          {activeTab === "profile" && (
-            <div className="space-y-4">
+          {saveError && (
+            <p role="alert" className="rounded-lg bg-danger-tint px-3 py-2 text-sm text-danger">
+              Could not save. Check your connection and try again.
+            </p>
+          )}
+
+          <Section title="Personal details">
+            <form onSubmit={(e) => { e.preventDefault(); if (changed) saveProfile() }} className={`${card} space-y-4 p-4`}>
               <div>
                 <label htmlFor="profile-name" className={labelClass}>Full name</label>
-                <input id="profile-name" type="text" placeholder="e.g. Ben Smith" value={fullName} onChange={(e) => setFullName(e.target.value)} className={inputClass} />
+                <input id="profile-name" type="text" autoComplete="name" placeholder="e.g. Ben Smith" value={fullName} onChange={(e) => setFullName(e.target.value)} className={inputClass} />
               </div>
               <div>
                 <label htmlFor="profile-university" className={labelClass}>University</label>
                 <input id="profile-university" type="text" placeholder="e.g. University of Cape Town" value={university} onChange={(e) => setUniversity(e.target.value)} className={inputClass} />
               </div>
-              <div>
-                <label htmlFor="profile-avatar" className={labelClass}>Profile picture URL</label>
-                <p className="mb-1.5 text-xs text-ink-muted">Or select your avatar above to upload one.</p>
-                <input id="profile-avatar" type="text" placeholder="https://..." value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} className={inputClass} />
-              </div>
-              {saveError && (
-                <p role="alert" className="mb-3 rounded-lg bg-danger-tint px-3 py-2 text-sm text-danger">
-                  Could not save. Check your connection and try again.
-                </p>
-              )}
-              <button onClick={saveProfile} disabled={saving} className={`${primaryButton} flex items-center justify-center gap-1.5`}>
-                {saving ? "Saving..." : saved ? <><Check size={16} aria-hidden="true" /> Saved</> : "Save profile"}
+              <button type="submit" disabled={saving || !changed} className={`${primaryButton} flex items-center justify-center gap-1.5`}>
+                {saving ? "Saving..." : saved && !changed ? <><Check size={16} aria-hidden="true" /> Saved</> : "Save changes"}
               </button>
+            </form>
+          </Section>
+
+          <Section title="Appearance">
+            <div className={`${card} ${row}`}>
+              <div>
+                <p className="text-sm font-medium text-ink">Dark mode</p>
+                <p className="mt-0.5 text-xs text-ink-muted">Easier on the eyes at night</p>
+              </div>
+              <Switch checked={isDark} onChange={toggleDarkMode} label="Dark mode" />
             </div>
+          </Section>
+
+          {profile && (
+            <Section title="Notifications">
+              <ReminderCard userId={profile.user_id} description="Get reminders from Lunara on this device." />
+            </Section>
           )}
 
-          {activeTab === "settings" && (
-            <div className="space-y-3">
-              <div className={`${card} flex items-center justify-between gap-3`}>
-                <div>
-                  <p className="text-sm font-medium text-ink">{isDark ? "Dark mode" : "Light mode"}</p>
-                  <p className="mt-0.5 text-xs text-ink-muted">{isDark ? "Switch to light mode" : "Switch to dark mode"}</p>
-                </div>
-                <Switch checked={isDark} onChange={toggleDarkMode} label="Dark mode" />
+          <Section title="Security">
+            <div className={`${card} divide-y divide-line`}>
+              <div className="px-4 py-3.5">
+                <p className="text-sm font-medium text-ink">Email</p>
+                <p className="mt-0.5 break-all text-sm text-ink-muted">{email}</p>
               </div>
-
-              <div className={card}>
-                <p className="mb-3 flex items-center gap-2 text-sm font-medium text-ink">
-                  <Lock size={15} aria-hidden="true" /> Change password
-                </p>
-                <label htmlFor="new-password" className="sr-only">New password</label>
-                <input
-                  id="new-password"
-                  type="password"
-                  placeholder="New password (min 6 characters)"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className={`${inputClass} mb-3`}
-                />
-                <button onClick={changePassword} disabled={passwordSaving || newPassword.length < 6} className={primaryButton}>
-                  {passwordSaving ? "Updating..." : passwordSaved ? "Password updated" : "Update password"}
+              <div>
+                <button onClick={() => setShowPassword(!showPassword)} aria-expanded={showPassword} className={`${row} w-full text-left`}>
+                  <span className="text-sm font-medium text-ink">Change password</span>
+                  <ChevronRight size={18} aria-hidden="true" className={`text-ink-muted transition-transform ${showPassword ? "rotate-90" : ""}`} />
                 </button>
-              </div>
-
-              <div className={card}>
-                <p className="mb-1 flex items-center gap-2 text-sm font-medium text-ink">
-                  <Mail size={15} aria-hidden="true" /> Email address
-                </p>
-                <p className="break-all text-sm text-ink-muted">{email}</p>
-              </div>
-            </div>
-          )}
-
-          {activeTab === "notifications" && (
-            <div className="space-y-3">
-              {[
-                { label: "Push notifications", desc: "Get notified about due assignments", key: "main" },
-                { label: "Assignment reminders", desc: "Remind me 1 day before due date", key: "assignments" },
-                { label: "Study streak alerts", desc: "Don't break your streak", key: "streak" },
-                { label: "Weekly summary", desc: "Weekly progress report", key: "weekly" },
-              ].map((item) => {
-                const isMain = item.key === "main"
-                return (
-                  <div key={item.key} className={`${card} flex items-center justify-between gap-3`}>
-                    <div>
-                      <p className="text-sm font-medium text-ink">{item.label}</p>
-                      <p className="mt-0.5 text-xs text-ink-muted">{item.desc}</p>
-                    </div>
-                    <Switch
-                      checked={isMain ? notifications : true}
-                      onChange={isMain ? toggleNotifications : undefined}
-                      disabled={!isMain}
-                      label={item.label}
+                {showPassword && (
+                  <form onSubmit={(e) => { e.preventDefault(); changePassword() }} className="space-y-3 px-4 pb-4">
+                    <label htmlFor="new-password" className="sr-only">New password</label>
+                    <input
+                      id="new-password"
+                      type="password"
+                      autoComplete="new-password"
+                      placeholder="New password (min 6 characters)"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className={inputClass}
                     />
-                  </div>
-                )
-              })}
-              <p className="pt-1 text-center text-xs text-ink-muted">More notification settings coming soon</p>
+                    {passwordError && <p role="alert" className="text-sm text-danger">{passwordError}</p>}
+                    <button type="submit" disabled={passwordSaving || newPassword.length < 6} className={primaryButton}>
+                      {passwordSaving ? "Updating..." : passwordSaved ? "Password updated" : "Update password"}
+                    </button>
+                  </form>
+                )}
+              </div>
             </div>
-          )}
-        </div>
+          </Section>
+
+          <button
+            onClick={() => { setOpen(false); logout() }}
+            className={`${card} flex w-full items-center justify-center gap-2 py-3 text-sm font-medium text-danger transition-colors hover:bg-danger-tint`}
+          >
+            <LogOut size={18} aria-hidden="true" /> Log out
+          </button>
+        </AccountPanel>
       )}
     </div>
   )

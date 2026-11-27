@@ -327,6 +327,7 @@ export default function Dashboard({ email, logout }: Props) {
             <Logo size={32} />
             <ProfileCenter
               email={email}
+              logout={logout}
               isDark={isDark}
               onThemeChange={changeTheme}
               onStreakUpdate={(streak) => setStudyStreak(streak)}
