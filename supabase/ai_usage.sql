@@ -4,6 +4,7 @@ create table if not exists public.ai_usage (
   user_id uuid not null references auth.users(id) on delete cascade,
   day date not null,
   used integer not null default 0,
+  refunded integer not null default 0,
   primary key (user_id, day)
 );
 
@@ -39,15 +40,15 @@ begin
 end;
 $$;
 
--- Gives a request back when the AI itself failed.
+-- Gives a request back when the AI itself failed. Capped at 5 a day so it cannot be used to dodge the limit.
 create or replace function public.refund_ai_request()
 returns void
 language sql
 security definer
 set search_path = public
 as $$
-  update public.ai_usage set used = greatest(used - 1, 0)
-  where user_id = auth.uid() and day = (now() at time zone 'Africa/Lusaka')::date;
+  update public.ai_usage set used = greatest(used - 1, 0), refunded = refunded + 1
+  where user_id = auth.uid() and day = (now() at time zone 'Africa/Lusaka')::date and refunded < 5;
 $$;
 
 create or replace function public.ai_used_today()
