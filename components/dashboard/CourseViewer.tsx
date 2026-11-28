@@ -9,6 +9,7 @@ import { schedule, describeInterval, type Grade } from "../../lib/sm2"
 import { calculateProgress, MASTERED_INTERVAL_DAYS, type QuizAttempt } from "../../lib/progress"
 import { getCurrentUser } from "../../lib/auth"
 import { structureContent } from "../../lib/formatContent"
+import QuizScore from "./QuizScore"
 import FocusPill from "../focus/FocusPill"
 import { imagePaths, plainContent, resolveImages } from "../../lib/courseImages"
 
@@ -544,12 +545,7 @@ export default function CourseViewer({ courseId, onBack, onOpenFocus }: Props) {
                         Submit answers
                       </button>
                     ) : (
-                      <div role="status" className="rounded-lg bg-accent-tint p-5 text-center">
-                        <p className="text-3xl font-semibold tabular-nums text-accent-strong">
-                          {quiz.filter((q, i) => quizAnswers[i] === q.answer).length} / {quiz.length}
-                        </p>
-                        <p className="mt-1 text-sm text-ink-muted">Correct answers</p>
-                      </div>
+                      <QuizScore score={quiz.filter((q, i) => quizAnswers[i] === q.answer).length} total={quiz.length} />
                     )}
                   </div>
                 )}
