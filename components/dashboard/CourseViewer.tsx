@@ -31,6 +31,35 @@ type Props = {
 
 type Tab = "content" | "summary" | "quiz" | "flashcards" | "explain"
 
+const QUIZ_COUNTS = [5, 10, 15, 20, 30]
+
+/** Reads the quiz JSON. If a long reply was cut off, keeps every question that finished. */
+function parseQuizJson(text: string): QuizQuestion[] {
+  const valid = (q: unknown): q is QuizQuestion => {
+    const x = q as QuizQuestion
+    return !!x && typeof x.question === "string" && Array.isArray(x.options) && typeof x.answer === "string"
+  }
+  const start = text.indexOf("[")
+  if (start === -1) return []
+  try {
+    const end = text.lastIndexOf("]")
+    const whole = JSON.parse(text.slice(start, end + 1))
+    if (Array.isArray(whole)) return whole.filter(valid)
+  } catch {}
+  const items: QuizQuestion[] = []
+  let depth = 0, from = -1, inStr = false, esc = false
+  for (let i = start + 1; i < text.length; i++) {
+    const c = text[i]
+    if (inStr) { if (esc) esc = false; else if (c === "\\") esc = true; else if (c === '"') inStr = false; continue }
+    if (c === '"') inStr = true
+    else if (c === "{") { if (depth++ === 0) from = i }
+    else if (c === "}" && --depth === 0 && from >= 0) {
+      try { const q = JSON.parse(text.slice(from, i + 1)); if (valid(q)) items.push(q) } catch {}
+    }
+  }
+  return items
+}
+
 type QuizQuestion = {
   question: string
   options: string[]
@@ -57,6 +86,7 @@ export default function CourseViewer({ courseId, onBack, onOpenFocus }: Props) {
   const [summaryError, setSummaryError] = useState("")
 
   const [quiz, setQuiz] = useState<QuizQuestion[]>([])
+  const [quizCount, setQuizCount] = useState(10)
   const [quizLoading, setQuizLoading] = useState(false)
   const [quizError, setQuizError] = useState("")
   const [quizAnswers, setQuizAnswers] = useState<Record<number, string>>({})
@@ -160,7 +190,7 @@ export default function CourseViewer({ courseId, onBack, onOpenFocus }: Props) {
     fetchAttempts()
   }, [courseId])
 
-  async function callAI(prompt: string): Promise<string> {
+  async function callAI(prompt: string, maxTokens?: number): Promise<string> {
     try {
       const { data: { session } } = await supabase.auth.getSession()
 
@@ -170,7 +200,7 @@ export default function CourseViewer({ courseId, onBack, onOpenFocus }: Props) {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${session?.access_token ?? ""}`,
         },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ prompt, maxTokens }),
       })
 
       if (!res.ok) {
@@ -227,18 +257,18 @@ export default function CourseViewer({ courseId, onBack, onOpenFocus }: Props) {
     setQuizError("")
     try {
       const result = await callAI(
-        `Generate 10 multiple choice quiz questions based on this course content.
+        `Generate exactly ${quizCount} multiple choice quiz questions based on this course content. Cover different parts of the content and do not repeat questions.
       Return ONLY a valid JSON array with no extra text, no markdown, no backticks. Format:
       [{"question":"...","options":["A) ...","B) ...","C) ...","D) ..."],"answer":"A) ..."}]
       
       Course: ${course.title}
-      Content: ${plainContent(course.content).slice(0, 4000)}`
+      Content: ${plainContent(course.content).slice(0, 6000)}`,
+        400 + quizCount * 220
       )
       try {
         const cleaned = result.replace(/```json|```/g, "").trim()
-        const match = cleaned.match(/\[[\s\S]*\]/)
-        const parsed = JSON.parse(match ? match[0] : cleaned)
-        if (!Array.isArray(parsed) || parsed.length === 0) throw new Error("Invalid quiz format")
+        const parsed = parseQuizJson(cleaned)
+        if (parsed.length === 0) throw new Error("Invalid quiz format")
         setQuiz(parsed)
       } catch {
         setQuizError("AI returned an unexpected format. Try generating again.")
@@ -440,6 +470,18 @@ export default function CourseViewer({ courseId, onBack, onOpenFocus }: Props) {
             {activeTab === "quiz" && (
               <div>
                 <TabHeader title="Quiz" subtitle="Test your knowledge">
+                  <div className="flex items-center gap-3">
+                  <label className="flex items-center gap-2 text-sm text-ink-muted">
+                    <span>Questions</span>
+                    <select
+                      value={quizCount}
+                      onChange={(e) => setQuizCount(Number(e.target.value))}
+                      disabled={quizLoading}
+                      className="rounded-lg border border-line bg-surface px-2.5 py-2 text-sm font-medium text-ink focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+                    >
+                      {QUIZ_COUNTS.map((n) => <option key={n} value={n}>{n}</option>)}
+                    </select>
+                  </label>
                   <button
                     onClick={generateQuiz}
                     disabled={quizLoading || !course.content}
@@ -447,9 +489,10 @@ export default function CourseViewer({ courseId, onBack, onOpenFocus }: Props) {
                   >
                     {quizLoading ? "Generating..." : quiz.length ? "New quiz" : "Generate quiz"}
                   </button>
+                  </div>
                 </TabHeader>
 
-                {quizLoading && <GeneratingSkeleton text="Generating quiz questions..." rows={6} />}
+                {quizLoading && <GeneratingSkeleton text={`Generating ${quizCount} quiz questions...`} rows={6} />}
 
                 {quizError && !quizLoading && <ErrorBanner message={quizError} />}
 

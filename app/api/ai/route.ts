@@ -8,6 +8,7 @@ const supabase = createClient(
 )
 
 const MAX_PROMPT_LENGTH = 8000
+export const maxDuration = 60
 
 export async function POST(req: NextRequest) {
   const authHeader = req.headers.get("authorization")
@@ -24,9 +25,14 @@ export async function POST(req: NextRequest) {
   }
 
   let prompt: unknown
+  let maxTokens = 4096
   try {
     const body = await req.json()
     prompt = body?.prompt
+    // Long answers (a 30-question quiz) need more room. Capped so nobody can ask for huge replies.
+    if (typeof body?.maxTokens === "number" && Number.isFinite(body.maxTokens)) {
+      maxTokens = Math.min(Math.max(Math.round(body.maxTokens), 256), 8000)
+    }
   } catch {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 })
   }
@@ -50,7 +56,7 @@ export async function POST(req: NextRequest) {
           "You are a helpful AI study assistant for university students. Help them with their studies, assignments, and learning.",
       },
       { role: "user", content: prompt },
-    ])
+    ], maxTokens)
 
     return NextResponse.json({ response: text })
   } catch (err) {
