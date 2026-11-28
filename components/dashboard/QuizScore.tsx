@@ -12,7 +12,7 @@ function verdict(percent: number) {
 }
 
 /** The quiz result: a ring that fills up while the percentage counts up, with a burst for good scores. */
-export default function QuizScore({ score, total }: { score: number; total: number }) {
+export default function QuizScore({ score, total, onRetry, onNew, busy }: { score: number; total: number; onRetry: () => void; onNew: () => void; busy?: boolean }) {
   const percent = total ? Math.round((score / total) * 100) : 0
   const [shown, setShown] = useState(0)
   const [done, setDone] = useState(false)
@@ -67,6 +67,14 @@ export default function QuizScore({ score, total }: { score: number; total: numb
       <p className={`mt-4 text-lg font-semibold text-ink transition-all duration-500 ${done ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"}`}>
         {verdict(percent)}
       </p>
+      <div className={`mt-5 grid gap-3 transition-opacity duration-500 sm:grid-cols-2 ${done ? "opacity-100" : "pointer-events-none opacity-0"}`}>
+        <button onClick={onRetry} disabled={busy} className="rounded-lg border border-accent/30 bg-surface py-3 text-sm font-medium text-accent-strong transition-colors hover:bg-accent-tint disabled:opacity-50">
+          Try same quiz again
+        </button>
+        <button onClick={onNew} disabled={busy} className="rounded-lg bg-accent py-3 text-sm font-medium text-on-accent transition-colors hover:bg-accent-strong disabled:opacity-50">
+          {busy ? "Generating..." : "New quiz"}
+        </button>
+      </div>
     </div>
   )
 }

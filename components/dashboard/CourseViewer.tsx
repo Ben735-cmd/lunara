@@ -250,6 +250,14 @@ export default function CourseViewer({ courseId, onBack, onOpenFocus }: Props) {
     }
   }
 
+  // Same questions, fresh answers, in a new order so the position cannot be memorised.
+  function retryQuiz() {
+    setQuiz(prev => [...prev].sort(() => Math.random() - 0.5))
+    setQuizAnswers({})
+    setQuizSubmitted(false)
+    document.getElementById("quiz-top")?.scrollIntoView({ behavior: "smooth", block: "start" })
+  }
+
   async function generateQuiz() {
     if (!course?.content) return
     setQuizLoading(true)
@@ -469,7 +477,7 @@ export default function CourseViewer({ courseId, onBack, onOpenFocus }: Props) {
 
             {/* QUIZ TAB */}
             {activeTab === "quiz" && (
-              <div>
+              <div id="quiz-top" className="scroll-mt-6">
                 <TabHeader title="Quiz" subtitle="Test your knowledge">
                   <div className="flex items-center gap-3">
                   <label className="flex items-center gap-2 text-sm text-ink-muted">
@@ -545,7 +553,7 @@ export default function CourseViewer({ courseId, onBack, onOpenFocus }: Props) {
                         Submit answers
                       </button>
                     ) : (
-                      <QuizScore score={quiz.filter((q, i) => quizAnswers[i] === q.answer).length} total={quiz.length} />
+                      <QuizScore score={quiz.filter((q, i) => quizAnswers[i] === q.answer).length} total={quiz.length} onRetry={retryQuiz} onNew={generateQuiz} busy={quizLoading} />
                     )}
                   </div>
                 )}
