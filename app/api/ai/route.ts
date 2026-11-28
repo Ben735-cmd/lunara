@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
-import { bearerToken, refundRequest, takeRequest, usedToday } from "../../../lib/aiLimit"
+import { bearerToken, refundRequest, takeRequest } from "../../../lib/aiLimit"
 import { askText } from "../../../lib/groq"
 
 const supabase = createClient(
@@ -70,10 +70,4 @@ export async function POST(req: NextRequest) {
       { status: 502 }
     )
   }
-}
-/** How many requests the person has left today. Does not use one up. */
-export async function GET(req: NextRequest) {
-  const used = await usedToday(bearerToken(req))
-  if (!used) return NextResponse.json({ error: "Not signed in." }, { status: 401 })
-  return NextResponse.json({ usage: used })
 }

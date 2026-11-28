@@ -20,13 +20,6 @@ export function bearerToken(req: NextRequest) {
   return req.headers.get("authorization")?.replace(/^Bearer\s+/i, "") || ""
 }
 
-/** Signed-in check without using up a request. */
-export async function usedToday(token: string): Promise<AiUsage | null> {
-  const { data, error } = await asUser(token).rpc("ai_used_today")
-  if (error || typeof data !== "number") return null
-  return usage(data)
-}
-
 /**
  * Uses one request. `blocked` is a ready-made reply when the person must not continue
  * (not signed in, or out of requests today). If the limit check itself breaks we let the
