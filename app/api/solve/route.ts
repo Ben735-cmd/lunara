@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import mammoth from "mammoth"
 import { askText, askVision } from "../../../lib/groq"
+import { bearerToken, refundRequest, takeRequest } from "../../../lib/aiLimit"
 
 // Model answers contain LaTeX such as \underbrace or \upsilon, so they only get the
 // light clean-up. The stricter sanitizeText below would strip "\u" from them.
@@ -49,10 +50,15 @@ Formatting rules:
 }
 
 export async function POST(req: NextRequest) {
+  const token = bearerToken(req)
+  const { blocked, usage } = await takeRequest(token)
+  if (blocked) return blocked
+
   const formData = await req.formData()
   const file = formData.get("file") as File
 
   if (!file) {
+    await refundRequest(token)
     return NextResponse.json({ error: "No file provided" }, { status: 400 })
   }
 
@@ -115,22 +121,25 @@ Formatting rules:
       ])
 
       const solution = cleanAnswer(visionAnswer || "Could not read image.")
-      return NextResponse.json({ solution })
+      return NextResponse.json({ solution, usage })
     }
 
     else {
+      await refundRequest(token)
       return NextResponse.json({ error: "Unsupported file type. Use PDF, DOCX, or an image." }, { status: 400 })
     }
 
     if (!questionText.trim()) {
+      await refundRequest(token)
       return NextResponse.json({ error: "Could not extract text from file." }, { status: 400 })
     }
 
     const solution = await solveWithGroq(questionText)
-    return NextResponse.json({ solution, extractedText: questionText })
+    return NextResponse.json({ solution, extractedText: questionText, usage })
 
   } catch (err) {
     console.error("Solve error:", err instanceof Error ? err.message : err)
+    await refundRequest(token)
     return NextResponse.json(
       { error: "The solver is temporarily unavailable. Please try again in a moment." },
       { status: 502 }

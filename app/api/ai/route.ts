@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
+import { bearerToken, refundRequest, takeRequest, usedToday } from "../../../lib/aiLimit"
 import { askText } from "../../../lib/groq"
 
 const supabase = createClient(
@@ -11,8 +12,7 @@ const MAX_PROMPT_LENGTH = 8000
 export const maxDuration = 60
 
 export async function POST(req: NextRequest) {
-  const authHeader = req.headers.get("authorization")
-  const token = authHeader?.replace("Bearer ", "")
+  const token = bearerToken(req)
 
   if (!token) {
     return NextResponse.json({ error: "You must be logged in to use the AI assistant." }, { status: 401 })
@@ -48,6 +48,9 @@ export async function POST(req: NextRequest) {
     )
   }
 
+  const { blocked, usage } = await takeRequest(token)
+  if (blocked) return blocked
+
   try {
     const text = await askText([
       {
@@ -58,12 +61,19 @@ export async function POST(req: NextRequest) {
       { role: "user", content: prompt },
     ], maxTokens)
 
-    return NextResponse.json({ response: text })
+    return NextResponse.json({ response: text, usage })
   } catch (err) {
     console.error("Groq API error:", err)
+    await refundRequest(token)
     return NextResponse.json(
       { error: "The AI assistant is temporarily unavailable. Please try again in a moment." },
       { status: 502 }
     )
   }
+}
+/** How many requests the person has left today. Does not use one up. */
+export async function GET(req: NextRequest) {
+  const used = await usedToday(bearerToken(req))
+  if (!used) return NextResponse.json({ error: "Not signed in." }, { status: 401 })
+  return NextResponse.json({ usage: used })
 }

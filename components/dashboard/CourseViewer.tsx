@@ -205,8 +205,9 @@ export default function CourseViewer({ courseId, onBack, onOpenFocus }: Props) {
       })
 
       if (!res.ok) {
-        const errText = await res.text()
-        throw new Error(`API error ${res.status}: ${errText}`)
+        // The server sends a plain-language reason (for example when the daily limit is reached).
+        const body = await res.json().catch(() => null)
+        throw new Error(body?.error || `The AI is unavailable right now (error ${res.status}).`)
       }
 
       const data = await res.json()

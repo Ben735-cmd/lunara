@@ -5,6 +5,7 @@ import { AlertTriangle, Camera, FileText, Image as ImageIcon, Upload } from "luc
 import dynamic from "next/dynamic"
 import CameraCapture from "./CameraCapture"
 import SolverHistory from "./SolverHistory"
+import { supabase } from "../../lib/supabase"
 import { makeThumbnail, saveSolvedQuestion, titleFromSolution } from "../../lib/solvedHistory"
 import { SolutionSkeleton } from "../ui/Skeleton"
 import PageHeader from "../ui/PageHeader"
@@ -51,7 +52,12 @@ export default function QuestionSolver() {
     formData.append("file", file)
 
     try {
-      const res = await fetch("/api/solve", { method: "POST", body: formData })
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch("/api/solve", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${session?.access_token ?? ""}` },
+        body: formData,
+      })
       const data = await res.json()
 
       if (data.error) {
